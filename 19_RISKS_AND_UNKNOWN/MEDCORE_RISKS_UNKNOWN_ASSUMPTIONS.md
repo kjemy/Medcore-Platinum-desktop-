@@ -1,0 +1,27 @@
+# MEDCORE — RISKS, UNKNOWNS, SOURCE CONFLICTS & QUESTIONS (`CATEGORY J`)
+**Document ID**: `DOC-17` | **Rule**: Never turn an `UNKNOWN` into a silent `ASSUMPTION` (§6 Category J & `00_RECON_CONVENTIONS.md`)
+
+---
+
+## 1. Source Conflicts Discovered (`Documented Claim` vs `Executable Code` — `FACT`)
+| Conflict ID | Topic | Documented Claim (`REPORTS/*.md` / `docs/*.md`) | Actual Code Reality (`Project 3` `FACT`) | Authoritative Resolution for `Project 4` |
+|---|---|---|---|---|
+| `CONF-01` | Offline Sync Coverage | Multiple reports in `REPORTS/` describe an offline-ready sync engine. | `Frontend/src/lib/offlineSync.ts:24` (`OFFLINE_ALLOWED_COMMANDS = new Set(['patient:create'])`) and `class-api-sync.php:91` support ONLY `patient:create`. | Treat `Project 3` offline sync as a prototype stub; build full LAN-based Local MedCore Service + Local MariaDB (`DOC-10`). |
+| `CONF-02` | Role Count & Names | Backend defines 10 roles (`class-medcore-security.php:16-92`). | Frontend defines 6 roles (`permissions.ts:6`) and `normalizeRole()` collapses `Pharmacist`, `Lab`, `Radiology`, `Cashier` into `Employee`. | Restore all 10 roles as first-class roles in `MedCore Desktop` (`DOC-08`). |
+| `CONF-03` | Default Permission Mode Behavior | UI labels describe `"default"` mode as "Role Default Permissions". | `PermissionGuard.tsx:154-158` and `useAuthStore.ts:127` bypass RBAC and grant `["*", ...ALL_PERMISSIONS]` in `"default"` mode! | Enforce `DEFAULT_ROLE_PERMISSIONS[role]` in `"default"` mode (`SEC-FLAW-01` fix). |
+| `CONF-04` | Settlement Accounting Direction | Financial docs describe balanced double-entry postings. | `class-api-financial-settlement.php:104-106,369,398` posts both `SETTLE-BEN-*` and `SETTLE-TR-*` as `DEBIT`. | Change `SETTLE-TR-*` (`TREASURY_CASH`) to `CREDIT` (`FIN-BUG-01` fix). |
+| `CONF-05` | Default Hospital Currency | Mixed references to `SAR` and `EGP`. | `post_visit_transaction:125` defaults to `'SAR'`; `reverse_visit_transaction:1109` and `adjust_visit_transaction:1432` hardcode `'EGP'`. | Resolve currency from `mc_tenants.default_currency` (`FIN-BUG-02` fix). |
+| `CONF-06` | Inventory Deduction on Visits | `MedCore_Inventory_Consumption::consume_for_service` exists (`class-medcore-inventory-consumption.php:5`). | Never called anywhere in `MedCore_Visit_Service` or `MedCore_Financial_Transaction_Service`. | Wire `consume_for_service` into visit/procedure execution and commission cost-split (`FIN-004`). |
+
+---
+
+## 2. Explicit `UNKNOWN / NEEDS DECISION` Register (`Category J`)
+Because static reconnaissance forbids guessing or connecting to live production databases (`UNVERIFIED-RUNTIME`), the following items are logged as explicit **Product / Architecture Decisions Required Before Coding Phase 1**:
+
+| Unknown ID | Decision Area | Why It Cannot Be Proven from `Project 3` Code | Options for Product Owner Decision |
+|---|---|---|---|
+| `UNK-01` | **Local MedCore Service Implementation Language** | `Project 3` backend is WordPress/PHP (`Category G`). Prompt §4–5 mandates `Flutter Client -> Local MedCore Service -> MariaDB` without locking in the service runtime language prematurely. | **Option A (Recommended)**: **Dart Backend Server** (`shelf` / `dart_frog`) — 100% shared domain models, validation rules, and `Decimal` math with the Flutter client.<br>**Option B**: **Go / Rust / .NET Native Windows Service** — single compiled native service binary.<br>**Option C**: **Bundled PHP/Laravel or Node/TypeScript Local Service** (not recommended due to runtime distribution overhead). |
+| `UNK-02` | **Commission Basis Policy When Patient Receives a Discount on a Procedure With Consumables** | `Project 3` has no Service vs Consumable split (`FIN-GAP-01`). When a `1,000` procedure (`600` service + `400` consumables) receives a `200` discount (`Net = 800`), how should the discount reduce the doctor's commissionable basis? | **Policy 1 (Hospital-First Protection)**: Deduct full consumable price/cost (`400`) first → `CommissionableNet = 800 - 400 = 400`.<br>**Policy 2 (Pro-Rata Discount)**: Allocate discount proportionally (`60%` to service, `40%` to consumables) → `ServiceNet = 600 - 120 = 480`.<br>*Recommendation*: Support both via `commission_discount_allocation_policy` in `mc_definition_rules`. |
+| `UNK-03` | **Multi-Branch Data Sync vs Pure Single-Hospital LAN** | `Project 3` uses `hospital_code` in one shared cloud DB. In `MedCore Desktop`, each hospital has its own Local MariaDB. | Confirm whether `MedCore Desktop v1.0` requires **Single-Site Hospital LAN only** (with WordPress Control Plane for license/entitlements), or **Multi-Branch Hospital Group Sync** (syncing patient MPI across branches). |
+| `UNK-04` | **Hardware Lab Analyzer (ASTM / HL7) & PACS (DICOM) Integration Scope** | `Project 3` stores lab results (`mc_lab_results`) and radiology reports (`mc_radiology_reports`) entered via UI forms; no ASTM serial/TCP listener or DICOM worklist broker exists in `Project 3` code. | Confirm whether `MedCore Desktop v1.0` keeps manual/file-import result entry or adds local LAN ASTM/HL7 listener in a later phase. |
+| `UNK-05` | **Live Hostinger Production Data Migration Requirement** | Static recon inspects `Project 3` code only (`UNVERIFIED-RUNTIME`). | Decide whether existing live tenants on Hostinger (`Project 2`) will be migrated into `MedCore Desktop` via a one-time SQL export/transform script, or if `MedCore Desktop` launches for new/fresh hospital installations first. |

@@ -1,0 +1,20 @@
+name: medcore_local_service
+description: MedCore Desktop Foundation — Local MedCore Service (Gate 1 DB Layer & Gate 2 Auth/Identity/RBAC)
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  shelf: ^1.4.1
+  shelf_router: ^1.1.4
+  mysql_client: ^0.0.27
+  crypto: ^3.0.3
+  decimal: ^3.0.2
+  uuid: ^4.4.0
+  path: ^1.9.0
+
+dev_dependencies:
+  test: ^1.25.0
+  http: ^1.2.1

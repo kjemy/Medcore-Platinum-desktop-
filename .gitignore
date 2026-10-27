@@ -1,0 +1,13 @@
+# Runtime binaries and database data
+runtime/
+*.zip
+*.tar.gz
+
+# Dart / Flutter build artifacts
+.dart_tool/
+.packages
+build/
+
+# OS / Temporary files
+Thumbs.db
+*.log

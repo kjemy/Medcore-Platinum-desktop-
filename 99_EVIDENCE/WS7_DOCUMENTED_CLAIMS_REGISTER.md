@@ -1,0 +1,139 @@
+# WS7 — Documented Claims Register (`REPORTS/*.md`, `Frontend/docs/*.md`, `Backend/MedCorePlugin/docs/*.md`)
+
+> **Classification**: `DOCUMENTED CLAIM` cross-checked against `FACT` (Executable Source Code) per Rule Q2.
+
+## 1. Complete Inventory of All 131 Markdown Documentation & Report Files
+
+| # | File Path | Tier | Lines | Top Heading | Verification Status vs Code |
+|---|---|---|---|---|---|
+| 1 | `MEDCORE_ENGINEERING_HISTORY.md` | `DOCS_REPORTS` | 120 | # MEDCORE — AUTHORITATIVE ENGINEERING HISTORY | DOCUMENTED CLAIM — Verified against code where applicable |
+| 2 | `Backend/MedCorePlugin/MEDCORE_MASTER_PLAN.md` | `DOCS_BACKEND` | 1614 | # MedCore Master Execution Plan | DOCUMENTED CLAIM — Verified against code where applicable |
+| 3 | `Backend/MedCorePlugin/PROJECT_EXECUTION_PLAN.md` | `DOCS_BACKEND` | 227 | # MedCore — Canonical Execution Plan | DOCUMENTED CLAIM — Verified against code where applicable |
+| 4 | `Backend/MedCorePlugin/docs/MEDCORE_EXECUTION_PLAN_100.md` | `DOCS_BACKEND` | 107 | # MedCore — Execution Plan 100 | DOCUMENTED CLAIM — Verified against code where applicable |
+| 5 | `Backend/MedCorePlugin/docs/architecture/medcore-foundation-contract-v1.md` | `DOCS_BACKEND` | 54 | # MedCore Foundation Contract v1 | DOCUMENTED CLAIM — Verified against code where applicable |
+| 6 | `Backend/MedCorePlugin/docs/planning/FINANCE_BLOCKER_REPORT.md` | `DOCS_BACKEND` | 6 | Backend/MedCorePlugin/docs/planning/FINANCE_BLOCKER_REPORT.md | DOCUMENTED CLAIM — Verified against code where applicable |
+| 7 | `Backend/MedCorePlugin/docs/planning/MEDCORE_MASTER_ROADMAP-2026-10-04.md` | `DOCS_BACKEND` | 315 | ## Scope and safety | DOCUMENTED CLAIM — Verified against code where applicable |
+| 8 | `Backend/MedCorePlugin/docs/reconciliation/2026-10-03-branch-source-reconciliation.md` | `DOCS_BACKEND` | 60 | # MedCore source-to-branch reconciliation | DOCUMENTED CLAIM — Verified against code where applicable |
+| 9 | `Frontend/docs/engineering/api-contract-analysis.md` | `DOCS_FRONTEND` | 32 | # API Contract Analysis | DOCUMENTED CLAIM — Verified against code where applicable |
+| 10 | `Frontend/docs/engineering/application-architecture-forensic-discovery.md` | `DOCS_FRONTEND` | 141 | # Application Architecture Forensic Discovery | DOCUMENTED CLAIM — Verified against code where applicable |
+| 11 | `Frontend/docs/engineering/architecture-gap-analysis.md` | `DOCS_FRONTEND` | 86 | # MEDCORE CURRENT vs TARGET ARCHITECTURE GAP ANALYSIS | DOCUMENTED CLAIM — Verified against code where applicable |
+| 12 | `Frontend/docs/engineering/CP38-source-reconciliation.md` | `DOCS_FRONTEND` | 85 | # MedCore CP38 — Source Reconciliation | DOCUMENTED CLAIM — Verified against code where applicable |
+| 13 | `Frontend/docs/engineering/data-domain-map.md` | `DOCS_FRONTEND` | 32 | # Migration Data Domain Map | DOCUMENTED CLAIM — Verified against code where applicable |
+| 14 | `Frontend/docs/engineering/data-model.md` | `DOCS_FRONTEND` | 27 | # Data Model & Identity Strategy | DOCUMENTED CLAIM — Verified against code where applicable |
+| 15 | `Frontend/docs/engineering/database-architecture.md` | `DOCS_FRONTEND` | 22 | # Database Architecture Rationale | DOCUMENTED CLAIM — Verified against code where applicable |
+| 16 | `Frontend/docs/engineering/database-infrastructure-readiness.md` | `DOCS_FRONTEND` | 53 | # DATABASE INFRASTRUCTURE READINESS REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 17 | `Frontend/docs/engineering/db-identity-gate-review.md` | `DOCS_FRONTEND` | 64 | # Identity Gate Code Review Report | DOCUMENTED CLAIM — Verified against code where applicable |
+| 18 | `Frontend/docs/engineering/defect-registry.md` | `DOCS_FRONTEND` | 72 | # MedCore Defect & Learning Registry | DOCUMENTED CLAIM — Verified against code where applicable |
+| 19 | `Frontend/docs/engineering/existing-cloudflare-infrastructure.md` | `DOCS_FRONTEND` | 47 | # Cloudflare Infrastructure Deep Audit & Discovery | DOCUMENTED CLAIM — Verified against code where applicable |
+| 20 | `Frontend/docs/engineering/file-migration-design.md` | `DOCS_FRONTEND` | 30 | # File Migration Strategy | DOCUMENTED CLAIM — Verified against code where applicable |
+| 21 | `Frontend/docs/engineering/file-security-analysis.md` | `DOCS_FRONTEND` | 28 | # File Security & Architecture Analysis | DOCUMENTED CLAIM — Verified against code where applicable |
+| 22 | `Frontend/docs/engineering/file-size-data-contract.md` | `DOCS_FRONTEND` | 29 | # File Size Data Contract (BigInt) | DOCUMENTED CLAIM — Verified against code where applicable |
+| 23 | `Frontend/docs/engineering/file-upload-inventory.md` | `DOCS_FRONTEND` | 16 | # Global File Upload Inventory | DOCUMENTED CLAIM — Verified against code where applicable |
+| 24 | `Frontend/docs/engineering/final-implementation-verification.md` | `DOCS_FRONTEND` | 66 | # IMPLEMENTATION VERIFICATION & FINAL GATE AUDIT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 25 | `Frontend/docs/engineering/final-pre-infrastructure-audit.md` | `DOCS_FRONTEND` | 55 | # FINAL PRE-INFRASTRUCTURE AUDIT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 26 | `Frontend/docs/engineering/medcore-admin-control-center.md` | `DOCS_FRONTEND` | 2 | # MedCore Admin Control Center | DOCUMENTED CLAIM — Verified against code where applicable |
+| 27 | `Frontend/docs/engineering/medcore-data-compatibility-matrix.md` | `DOCS_FRONTEND` | 11 | # MEDCORE DATA COMPATIBILITY MATRIX | DOCUMENTED CLAIM — Verified against code where applicable |
+| 28 | `Frontend/docs/engineering/medcore-final-integration-audit.md` | `DOCS_FRONTEND` | 66 | # MEDCORE FINAL INTEGRATION AUDIT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 29 | `Frontend/docs/engineering/medcore-final-verification-gate.md` | `DOCS_FRONTEND` | 37 | # MEDCORE FINAL VERIFICATION GATE | DOCUMENTED CLAIM — Verified against code where applicable |
+| 30 | `Frontend/docs/engineering/medcore-full-functional-migration-plan.md` | `DOCS_FRONTEND` | 25 | # MedCore Full Functional Migration Plan | DOCUMENTED CLAIM — Verified against code where applicable |
+| 31 | `Frontend/docs/engineering/medcore-functional-parity-matrix.md` | `DOCS_FRONTEND` | 40 | # MEDCORE FUNCTIONAL PARITY MATRIX | DOCUMENTED CLAIM — Verified against code where applicable |
+| 32 | `Frontend/docs/engineering/medcore-migration-plan.md` | `DOCS_FRONTEND` | 2 | # MedCore Migration Plan | DOCUMENTED CLAIM — Verified against code where applicable |
+| 33 | `Frontend/docs/engineering/medcore-migration-stub-analysis.md` | `DOCS_FRONTEND` | 34 | # MEDCORE MIGRATION STUB ANALYSIS | DOCUMENTED CLAIM — Verified against code where applicable |
+| 34 | `Frontend/docs/engineering/medcore-observability.md` | `DOCS_FRONTEND` | 2 | # MedCore Observability | DOCUMENTED CLAIM — Verified against code where applicable |
+| 35 | `Frontend/docs/engineering/medcore-post-security-gate-verification.md` | `DOCS_FRONTEND` | 134 | # MEDCORE POST-SECURITY-GATE VERIFICATION | DOCUMENTED CLAIM — Verified against code where applicable |
+| 36 | `Frontend/docs/engineering/medcore-r2-architecture.md` | `DOCS_FRONTEND` | 55 | # MedCore R2 Storage Architecture & Security Review | DOCUMENTED CLAIM — Verified against code where applicable |
+| 37 | `Frontend/docs/engineering/medcore-security-hardening.md` | `DOCS_FRONTEND` | 2 | # MedCore Security Hardening | DOCUMENTED CLAIM — Verified against code where applicable |
+| 38 | `Frontend/docs/engineering/medcore-security-test-matrix.md` | `DOCS_FRONTEND` | 7 | # MedCore Security Test Matrix | DOCUMENTED CLAIM — Verified against code where applicable |
+| 39 | `Frontend/docs/engineering/medcore-unified-plugin-architecture.md` | `DOCS_FRONTEND` | 2 | # MedCore Unified Plugin Architecture | DOCUMENTED CLAIM — Verified against code where applicable |
+| 40 | `Frontend/docs/engineering/medcore-unified-security-final-report.md` | `DOCS_FRONTEND` | 66 | # MedCore Unified Security Final Report - PRE-STAGING GATE | DOCUMENTED CLAIM — Verified against code where applicable |
+| 41 | `Frontend/docs/engineering/migration-plan.md` | `DOCS_FRONTEND` | 24 | # Migration Plan & Data Classification | DOCUMENTED CLAIM — Verified against code where applicable |
+| 42 | `Frontend/docs/engineering/rollback-plan.md` | `DOCS_FRONTEND` | 17 | # Rollback & Data Recovery Strategy | DOCUMENTED CLAIM — Verified against code where applicable |
+| 43 | `Frontend/docs/engineering/schema-review.md` | `DOCS_FRONTEND` | 79 | # SCHEMA REVIEW CHECKPOINT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 44 | `Frontend/docs/engineering/storage-architecture.md` | `DOCS_FRONTEND` | 70 | # File Storage Architecture | DOCUMENTED CLAIM — Verified against code where applicable |
+| 45 | `Frontend/docs/engineering/test-db-provisioning-requirements.md` | `DOCS_FRONTEND` | 20 | # PostgreSQL TEST Provisioning Requirements | DOCUMENTED CLAIM — Verified against code where applicable |
+| 46 | `Frontend/docs/engineering/test-environment-design.md` | `DOCS_FRONTEND` | 31 | # Test Environment Design | DOCUMENTED CLAIM — Verified against code where applicable |
+| 47 | `Frontend/docs/engineering/test-strategy.md` | `DOCS_FRONTEND` | 26 | # Test Strategy & Isolated Environment | DOCUMENTED CLAIM — Verified against code where applicable |
+| 48 | `Frontend/docs/engineering/unified-plugin-execution-report.md` | `DOCS_FRONTEND` | 55 | # MedCore Unified Core Plugin - Execution & Review Report | DOCUMENTED CLAIM — Verified against code where applicable |
+| 49 | `Frontend/docs/engineering/wordpress-dependency-map.md` | `DOCS_FRONTEND` | 58 | # WordPress Dependency Map | DOCUMENTED CLAIM — Verified against code where applicable |
+| 50 | `Frontend/docs/engineering/phases/phase-1-completion-report.md` | `DOCS_FRONTEND` | 33 | # MEDCORE PHASE 1 — FINAL STATUS | DOCUMENTED CLAIM — Verified against code where applicable |
+| 51 | `Frontend/docs/engineering/phases/phase-1-dynamic-verification-report.md` | `DOCS_FRONTEND` | 68 | # MEDCORE PHASE 1 — DYNAMIC VERIFICATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 52 | `Frontend/docs/engineering/phases/phase-1-users-staff-auth-inventory.md` | `DOCS_FRONTEND` | 12 | # PHASE 1: USERS, STAFF & AUTH INVENTORY | DOCUMENTED CLAIM — Verified against code where applicable |
+| 53 | `Frontend/docs/engineering/phases/phase-1-users-staff-auth-test-results.md` | `DOCS_FRONTEND` | 20 | # PHASE 1 TEST RESULTS | DOCUMENTED CLAIM — Verified against code where applicable |
+| 54 | `Frontend/docs/engineering/phases/phase-1-validation-environment.md` | `DOCS_FRONTEND` | 10 | # PHASE 1 VALIDATION ENVIRONMENT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 55 | `Frontend/docs/execution/MEDCORE_EXECUTION_LEDGER.md` | `DOCS_FRONTEND` | 235 | # MEDCORE PERMANENT ENGINEERING EXECUTION LEDGER | DOCUMENTED CLAIM — Verified against code where applicable |
+| 56 | `Frontend/docs/execution/PROMPT_INDEX.md` | `DOCS_FRONTEND` | 16 | # MEDCORE EXECUTION PROMPT INDEX | DOCUMENTED CLAIM — Verified against code where applicable |
+| 57 | `MANIFEST/MEDCORE_PROJECT2_MANIFEST.md` | `DOCS_REPORTS` | 98 | # MEDCORE — PROJECT2 MASTER WORKING BASELINE MANIFEST | DOCUMENTED CLAIM — Verified against code where applicable |
+| 58 | `REPORTS/MEDCORE_AI_DOCTOR_FORENSIC_20261017_014630.md` | `DOCS_REPORTS` | 239 | # MEDCORE — AI DOCTOR DEEP FORENSIC INVESTIGATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 59 | `REPORTS/medcore_all_roles_closure_results_20261020.json` | `DOCS_REPORTS` | 229 | REPORTS/medcore_all_roles_closure_results_20261020.json | DOCUMENTED CLAIM — Verified against code where applicable |
+| 60 | `REPORTS/MEDCORE_AUTHORIZATION_SUPERADMIN_SETTINGS_GATE_20261023.md` | `DOCS_REPORTS` | 198 | # MEDCORE — AUTHORIZATION, SUPER ADMIN & SETTINGS ACCESS GATE REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 61 | `REPORTS/MEDCORE_BATCH10_TEST_DEPLOYMENT_MIGRATION_VERIFICATION_20261021.md` | `DOCS_REPORTS` | 94 | # MEDCORE — BATCH 10 IMPLEMENTATION & CLOSURE REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 62 | `REPORTS/MEDCORE_BATCH11_RUNTIME_MARIADB_MULTIROLE_E2E_20261021.md` | `DOCS_REPORTS` | 65 | # MEDCORE — BATCH 11 VERIFICATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 63 | `REPORTS/MEDCORE_BATCH1_DATABASE_SCHEMA_IMPLEMENTATION_20261021.md` | `DOCS_REPORTS` | 268 | # MEDCORE — BATCH 1 DATABASE & SCHEMA FOUNDATION IMPLEMENTATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 64 | `REPORTS/MEDCORE_BATCH1_REPAIR_20261021.md` | `DOCS_REPORTS` | 217 | # MEDCORE — BATCH 1 REPAIR REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 65 | `REPORTS/MEDCORE_BATCH1_VERIFICATION_GATE_20261021.md` | `DOCS_REPORTS` | 340 | # MEDCORE — BATCH 1 VERIFICATION GATE | DOCUMENTED CLAIM — Verified against code where applicable |
+| 66 | `REPORTS/MEDCORE_BATCH1_VERIFICATION_GATE_2_20261021.md` | `DOCS_REPORTS` | 294 | # MEDCORE — BATCH 1 VERIFICATION GATE #2 REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 67 | `REPORTS/MEDCORE_BATCH2_COMMISSION_FINANCIAL_SUBLEDGER_IMPLEMENTATION_20261021.md` | `DOCS_REPORTS` | 97 | # MEDCORE — BATCH 2: COMMISSION & FINANCIAL SUB-LEDGER UPGRADE IMPLEMENTATION REPORT | PARTIALLY VERIFIED: Commission engine exists, but settlement has double-debit bug & no consumable cost split |
+| 68 | `REPORTS/MEDCORE_BATCH3_CASHIER_SHIFT_IMPLEMENTATION_20261021.md` | `DOCS_REPORTS` | 79 | # MEDCORE — BATCH 3: CASHIER SHIFT SERVICE & API IMPLEMENTATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 69 | `REPORTS/MEDCORE_BATCH4_CANONICAL_ATOMIC_VISIT_IMPLEMENTATION_20261021.md` | `DOCS_REPORTS` | 78 | # MEDCORE — BATCH 4: CANONICAL ATOMIC VISIT SERVICE IMPLEMENTATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 70 | `REPORTS/MEDCORE_BATCH5_VISIT_ENCOUNTER_FINANCE_API_RBAC_IMPLEMENTATION_20261021.md` | `DOCS_REPORTS` | 74 | # MEDCORE — BATCH 5: VISIT / ENCOUNTER / FINANCE REST + RBAC IMPLEMENTATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 71 | `REPORTS/MEDCORE_BATCH6_LEGACY_STORAGE_BACKFILL_IMPLEMENTATION_20261021.md` | `DOCS_REPORTS` | 66 | # MEDCORE — BATCH 6: LEGACY STORAGE SAFE BACKFILL IMPLEMENTATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 72 | `REPORTS/MEDCORE_BATCH7_FRONTEND_VISIT_QUEUE_REWIRE_IMPLEMENTATION_20261021.md` | `DOCS_REPORTS` | 57 | # MEDCORE — BATCH 7 IMPLEMENTATION & CLOSURE REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 73 | `REPORTS/MEDCORE_BATCH8_FRONTEND_FINANCE_SHIFT_STORAGE_DEAUTHORIZATION_20261021.md` | `DOCS_REPORTS` | 63 | # MEDCORE — BATCH 8 IMPLEMENTATION & CLOSURE REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 74 | `REPORTS/MEDCORE_BATCH9_STATIC_BUILD_SECURITY_GATE_20261021.md` | `DOCS_REPORTS` | 64 | # MEDCORE — BATCH 9 IMPLEMENTATION & CLOSURE REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 75 | `REPORTS/MEDCORE_BOOKING_VISIT_DOMAIN_PERMANENT_CLOSURE_20261021.md` | `DOCS_REPORTS` | 586 | # MEDCORE — BOOKING & VISIT DOMAIN PERMANENT CLOSURE FORENSIC AUDIT & CANONICAL ARCHITECTURE SPECIFICATION | DOCUMENTED CLAIM — Verified against code where applicable |
+| 76 | `REPORTS/MEDCORE_BOOKING_VISIT_FINANCE_PERMANENT_SYSTEM_CLOSURE_20261021.md` | `DOCS_REPORTS` | 291 | # MEDCORE — BOOKING, VISIT, QUEUE, CLINICAL & FINANCIAL DOMAIN | DOCUMENTED CLAIM — Verified against code where applicable |
+| 77 | `REPORTS/MEDCORE_CANONICAL_BOOKING_VISIT_FINANCE_ARCHITECTURE_PLAN_20261021.md` | `DOCS_REPORTS` | 967 | # MEDCORE — CANONICAL BOOKING / VISIT / RECEPTION / ENCOUNTER / FINANCE / TREASURY / SHIFT ARCHITECTURE & PERMANENT REPAIR PLAN | DOCUMENTED CLAIM — Verified against code where applicable |
+| 78 | `REPORTS/MEDCORE_CANONICAL_BOOKING_VISIT_FINANCE_ARCHITECTURE_REVIEW_20261021.md` | `DOCS_REPORTS` | 822 | # MEDCORE — CANONICAL BOOKING / VISIT / RECEPTION / ENCOUNTER / FINANCE / TREASURY / SHIFT ARCHITECTURE REVIEW GATE & IMPLEMENTATION-AUTHORIZED BLUEPRINT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 79 | `REPORTS/MEDCORE_CANONICAL_SYSTEM_CLOSURE_15_REPORTS_CONSOLIDATED_20261021.md` | `DOCS_REPORTS` | 2050 | # MEDCORE — MASTER COMPENDIUM OF ALL 15 ARCHITECTURAL, IMPLEMENTATION & VERIFICATION REPORTS | DOCUMENTED CLAIM — Verified against code where applicable |
+| 80 | `REPORTS/MEDCORE_CODEX_FINDINGS_ADJUDICATION_20261022.md` | `DOCS_REPORTS` | 377 | # MEDCORE — CODEX FINAL RED TEAM ADJUDICATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 81 | `REPORTS/MEDCORE_CODEX_RECONCILIATION_ARCHITECTURE_DEFENSE_20261022.md` | `DOCS_REPORTS` | 944 | # MEDCORE — INDEPENDENT RED TEAM RECONCILIATION & ARCHITECTURE DEFENSE | DOCUMENTED CLAIM — Verified against code where applicable |
+| 82 | `REPORTS/MEDCORE_COMPLETE_CANONICAL_BOOKING_VISIT_FINANCE_SYSTEM_CLOSURE_20261021.md` | `DOCS_REPORTS` | 97 | # MEDCORE — COMPLETE CANONICAL SYSTEM CLOSURE REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 83 | `REPORTS/medcore_e2e_verification_results_20261019.json` | `DOCS_REPORTS` | 181 | REPORTS/medcore_e2e_verification_results_20261019.json | DOCUMENTED CLAIM — Verified against code where applicable |
+| 84 | `REPORTS/MEDCORE_ENGINEERING_HISTORY.md` | `DOCS_REPORTS` | 212 | # MEDCORE — COMPLETE REVERSE ENGINEERING HISTORY & TRACEABILITY | DOCUMENTED CLAIM — Verified against code where applicable |
+| 85 | `REPORTS/MEDCORE_ENGINEERING_STATION_01_RED_TEAM_20261017_014630.md` | `DOCS_REPORTS` | 352 | # MEDCORE — ENGINEERING STATION 01: FULL SYSTEM RED TEAM REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 86 | `REPORTS/MEDCORE_FINAL_ACCEPTANCE_GATE_VERIFICATION_20261023.md` | `DOCS_REPORTS` | 156 | # MEDCORE — FINAL AUTHORIZATION & FINANCE ACCEPTANCE GATE REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 87 | `REPORTS/MEDCORE_FINAL_CODE_CLOSURE_GATE_20261021.md` | `DOCS_REPORTS` | 248 | # MEDCORE — FINAL CODE CLOSURE GATE REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 88 | `REPORTS/MEDCORE_FINAL_ENGINEERING_AND_EVIDENCE_HANDOVER_REPORT_20261022.md` | `DOCS_REPORTS` | 733 | # MEDCORE — FINAL ENGINEERING & EVIDENCE HANDOVER REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 89 | `REPORTS/MEDCORE_FINAL_INDEPENDENT_CODEX_RED_TEAM_20261021.md` | `DOCS_REPORTS` | 131 | # MEDCORE — FINAL INDEPENDENT CODEX RED-TEAM AUDIT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 90 | `REPORTS/MEDCORE_FINAL_ROOT_CAUSE_REMEDIATION_20261022.md` | `DOCS_REPORTS` | 283 | # MEDCORE — FINAL ROOT-CAUSE REMEDIATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 91 | `REPORTS/MEDCORE_FINAL_SURGICAL_CLOSURE_RT05_RT06_RT07_20261023.md` | `DOCS_REPORTS` | 140 | # MEDCORE — FINAL SURGICAL CLOSURE FOR RT-05 / RT-06 / RT-07 | DOCUMENTED CLAIM — Verified against code where applicable |
+| 92 | `REPORTS/MEDCORE_FINANCIAL_INTEGRITY_TREASURY_DOCTOR_PROFITS_GATE_20261023.md` | `DOCS_REPORTS` | 237 | # MEDCORE — FINANCIAL INTEGRITY & SINGLE SOURCE OF TRUTH GATE | DOCUMENTED CLAIM — Verified against code where applicable |
+| 93 | `REPORTS/MEDCORE_FRONTEND_CI_LOCKFILE_FIX_20261017_003800.md` | `DOCS_REPORTS` | 137 | # MEDCORE — FRONTEND CI LOCKFILE SYNCHRONIZATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 94 | `REPORTS/MEDCORE_FRONTEND_DEPLOYMENT_FORENSIC_20261016_233500.md` | `DOCS_REPORTS` | 197 | # MEDCORE — FRONTEND DEPLOYMENT FORENSIC REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 95 | `REPORTS/MEDCORE_FRONTEND_HOSTINGER_RESYNC_REBUILD_20261020.md` | `DOCS_REPORTS` | 257 | # MEDCORE — FRONTEND HOSTINGER RE-SYNC & REBUILD FORENSIC REPORT | SOURCE CONFLICT if claiming full offline: Code supports ONLY `patient:create` (`offlineSync.ts:24`) |
+| 96 | `REPORTS/MEDCORE_FULL_RED_TEAM_RE_AUDIT_20261017.md` | `DOCS_REPORTS` | 260 | # MEDCORE — FULL RED TEAM RE-AUDIT REPORT (RECONCILED) | DOCUMENTED CLAIM — Verified against code where applicable |
+| 97 | `REPORTS/MEDCORE_HUMAN_RUNTIME_ACCEPTANCE_CHECKLIST_20261021.md` | `DOCS_REPORTS` | 52 | # MEDCORE — HUMAN RUNTIME ACCEPTANCE TEST CHECKLIST | DOCUMENTED CLAIM — Verified against code where applicable |
+| 98 | `REPORTS/MEDCORE_INDEPENDENT_CODEX_RED_TEAM_20261021.md` | `DOCS_REPORTS` | 327 | # MEDCORE Independent Code Red Team — 2026-10-21 | DOCUMENTED CLAIM — Verified against code where applicable |
+| 99 | `REPORTS/MEDCORE_MARIADB_EVIDENCE_GATE_20261022.md` | `DOCS_REPORTS` | 669 | # MEDCORE — MARIA DB EVIDENCE GATE REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 100 | `REPORTS/MEDCORE_MASS_ISSUES_REGISTER_20261017_014630.md` | `DOCS_REPORTS` | 138 | # MEDCORE — MASS ISSUES REGISTER | DOCUMENTED CLAIM — Verified against code where applicable |
+| 101 | `REPORTS/MEDCORE_MASTER_REMEDIATION_PLAN_20261017.md` | `DOCS_REPORTS` | 388 | # MEDCORE — MASTER REMEDIATION PLAN (RECONCILED & STANDARDIZED) | DOCUMENTED CLAIM — Verified against code where applicable |
+| 102 | `REPORTS/MEDCORE_P0_P1_MASS_WORK_EXECUTION_20261022.md` | `DOCS_REPORTS` | 255 | # MEDCORE — P0/P1 DATA-INTEGRITY MASS WORK EXECUTION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 103 | `REPORTS/MEDCORE_P1_P2_SURGICAL_FIXES_EXECUTION_20261022.md` | `DOCS_REPORTS` | 210 | # MEDCORE — P1/P2 SURGICAL FIXES EXECUTION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 104 | `REPORTS/MEDCORE_P2_SEVEN_FIXES_EXECUTION_20261022.md` | `DOCS_REPORTS` | 164 | # MEDCORE — SEVEN P2 SURGICAL REMEDIATION EXECUTION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 105 | `REPORTS/MEDCORE_P2_SEVEN_FIXES_FINAL_RED_TEAM_20261022.md` | `DOCS_REPORTS` | 124 | # MEDCORE — SEVEN P2 SURGICAL FIXES FINAL INDEPENDENT RED TEAM REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 106 | `REPORTS/MEDCORE_PATIENT_RBAC_PERSISTENCE_FINAL_CLOSURE_20261020.md` | `DOCS_REPORTS` | 428 | # MEDCORE — FINAL FORENSIC CLOSURE & HARDENING REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 107 | `REPORTS/MEDCORE_PATIENT_VISIBILITY_RBAC_PERSISTENCE_FORENSIC_FINAL_20261020.md` | `DOCS_REPORTS` | 201 | # MEDCORE — PATIENT VISIBILITY, PERSISTENCE, RBAC & AUDIT REPAIR REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 108 | `REPORTS/MEDCORE_PERMISSION_MODE_DEFAULT_CUSTOM_FIX_20261020.md` | `DOCS_REPORTS` | 149 | # MEDCORE — FORENSIC REPAIR & VERIFICATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 109 | `REPORTS/medcore_permission_mode_matrix_results.json` | `DOCS_REPORTS` | 85 | REPORTS/medcore_permission_mode_matrix_results.json | DOCUMENTED CLAIM — Verified against code where applicable |
+| 110 | `REPORTS/MEDCORE_PROJECT2_CREATION_REPORT.md` | `DOCS_REPORTS` | 55 | # MEDCORE — PROJECT2 CREATION & AUDIT REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 111 | `REPORTS/MEDCORE_RBAC_ROLES_TABS_PATIENTS_VISITS_FINAL_20261020.md` | `DOCS_REPORTS` | 557 | # MEDCORE MASTER FORENSIC & VERIFICATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 112 | `REPORTS/MEDCORE_RED_TEAM_REMEDIATION_EXECUTION_REPORT_20261017.md` | `DOCS_REPORTS` | 138 | # MEDCORE — RED TEAM REMEDIATION FINAL EXECUTION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 113 | `REPORTS/MEDCORE_RT07_SOURCE_TRUTH_VERIFICATION_20261023.md` | `DOCS_REPORTS` | 122 | # MEDCORE — RT-07 SOURCE TRUTH VERIFICATION & SURGICAL CLOSURE REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 114 | `REPORTS/MEDCORE_SECURITY_REPAIR_AND_GITHUB_RECONCILIATION_FINAL_20261019.md` | `DOCS_REPORTS` | 129 | # MEDCORE — MASTER CONTROLLED RECONCILIATION & FORENSIC REPAIR REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 115 | `REPORTS/MEDCORE_SECURITY_REPAIR_AND_GITHUB_RECONCILIATION_FINAL_20261020.md` | `DOCS_REPORTS` | 158 | # MEDCORE — ONE-SHOT FINAL CLOSURE & COMPREHENSIVE FORENSIC REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 116 | `REPORTS/MEDCORE_STATION_02_5_FINDINGS_20261017_073200.md` | `DOCS_REPORTS` | 85 | # MEDCORE — ENGINEERING STATION 02.5: VERIFIED FINDINGS REGISTER | DOCUMENTED CLAIM — Verified against code where applicable |
+| 117 | `REPORTS/MEDCORE_STATION_02_5_RELEASE_INTEGRITY_20261017_074000.md` | `DOCS_REPORTS` | 65 | # MEDCORE — ENGINEERING STATION 02.5: RELEASE INTEGRITY & RUNTIME VERIFICATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 118 | `REPORTS/MEDCORE_STATION_02_5_REPAIR_REPORT_20261017_074000.md` | `DOCS_REPORTS` | 68 | # MEDCORE — ENGINEERING STATION 02.5: REPAIR EXECUTION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 119 | `REPORTS/MEDCORE_STATION_02_BATCH_01_AI_DOCTOR_20261017_065500.md` | `DOCS_REPORTS` | 82 | # MEDCORE — ENGINEERING STATION 02: BATCH 01 AI DOCTOR RESOLUTION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 120 | `REPORTS/MEDCORE_STATION_02_MASS_RESOLVE_FINAL_20261017_070500.md` | `DOCS_REPORTS` | 71 | # MEDCORE — ENGINEERING STATION 02: FINAL MASS RESOLVE EXECUTION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 121 | `REPORTS/MEDCORE_STATION_03A_DB_TRUTH_20261017_081500.md` | `DOCS_REPORTS` | 59 | # MEDCORE — ENGINEERING STATION 03-A: DATABASE TRUTH & PERSISTENCE VERIFICATION | DOCUMENTED CLAIM — Verified against code where applicable |
+| 122 | `REPORTS/MEDCORE_STATION_03A_FINDINGS_20261017_081500.md` | `DOCS_REPORTS` | 56 | # MEDCORE — ENGINEERING STATION 03-A: FINDINGS & ROOT CAUSE REGISTER | DOCUMENTED CLAIM — Verified against code where applicable |
+| 123 | `REPORTS/MEDCORE_STATION_03A_MASS_RED_TEAM_20261017_081500.md` | `DOCS_REPORTS` | 83 | # MEDCORE — ENGINEERING STATION 03-A: MASS RED TEAM AUDIT REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 124 | `REPORTS/MEDCORE_STATION_03A_REPAIR_REPORT_20261017_082000.md` | `DOCS_REPORTS` | 31 | # MEDCORE — ENGINEERING STATION 03-A: REPAIR REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 125 | `REPORTS/MEDCORE_STATION_03B_FINDINGS_20261017_085000.md` | `DOCS_REPORTS` | 32 | # MEDCORE — STATION 03-B MASTER ISSUES REGISTER & FINDINGS | DOCUMENTED CLAIM — Verified against code where applicable |
+| 126 | `REPORTS/MEDCORE_STATION_03B_MASS_WORK_20261017_085000.md` | `DOCS_REPORTS` | 239 | # MEDCORE — ENGINEERING STATION 03-B: MASS WORK REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 127 | `REPORTS/MEDCORE_STATION_03B_RELEASE_GATE_20261017_085000.md` | `DOCS_REPORTS` | 47 | # MEDCORE — STATION 03-B CRITICAL RELEASE GATE | DOCUMENTED CLAIM — Verified against code where applicable |
+| 128 | `REPORTS/MEDCORE_STATION_03B_RELEASE_MANIFEST_20261017_085000.md` | `DOCS_REPORTS` | 51 | # MEDCORE — STATION 03-B RELEASE MANIFEST | DOCUMENTED CLAIM — Verified against code where applicable |
+| 129 | `REPORTS/MEDCORE_STATION_03B_REPAIR_REPORT_20261017_085000.md` | `DOCS_REPORTS` | 87 | # MEDCORE — STATION 03-B REPAIR REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 130 | `REPORTS/MEDCORE_TEST_DEPLOYMENT_REPORT_20261016_230500.md` | `DOCS_REPORTS` | 109 | # MEDCORE — TEST DEPLOYMENT & VERIFICATION REPORT | DOCUMENTED CLAIM — Verified against code where applicable |
+| 131 | `REPORTS/MEDCORE_TREASURY_AND_DOCTOR_PROFITS_CLOSURE_REPORT_20261023.md` | `DOCS_REPORTS` | 163 | # MEDCORE — CLOSURE & ACCEPTANCE REPORT: TREASURY & DOCTOR PROFITS REMEDIATION | DOCUMENTED CLAIM — Verified against code where applicable |
