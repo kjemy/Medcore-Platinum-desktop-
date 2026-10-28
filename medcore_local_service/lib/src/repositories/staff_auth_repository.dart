@@ -63,6 +63,7 @@ class StaffIdentityRepository {
     OperationalFlags? operationalFlags,
     String baseSalaryDecimal = '0.0000',
     bool isActive = true,
+    bool forcePasswordChange = false,
   }) async {
     final flags = operationalFlags ?? PermissionsCatalog.defaultFlagsForRole(role);
     final res = await db.execute(
@@ -72,13 +73,13 @@ class StaffIdentityRepository {
         password_hash, role, department_id, clinic_id, doctor_definition_code,
         specialty, permissions_mode, custom_permissions_json, secure_permissions_json,
         can_edit, can_delete, can_collect_money, can_make_refunds, refund_policy,
-        base_salary, status, is_active
+        base_salary, status, is_active, force_password_change, password_changed_at
       ) VALUES (
         :hosp, :code, :name, :email, :phone, :nid,
         :pwd, :role, :dept, :clinic, :doc_code,
         :spec, :pmode, :cperms, :sperms,
         :cedit, :cdel, :ccollect, :crefund, :rpolicy,
-        :salary, :status, :active
+        :salary, :status, :active, :fchange, CURRENT_TIMESTAMP
       )
       ''',
       {
@@ -105,6 +106,7 @@ class StaffIdentityRepository {
         'salary': baseSalaryDecimal,
         'status': isActive ? 'active' : 'inactive',
         'active': isActive ? 1 : 0,
+        'fchange': forcePasswordChange ? 1 : 0,
       },
     );
     final id = res.lastInsertID.toInt();
@@ -208,6 +210,13 @@ class StaffIdentityRepository {
       refundPolicy: RefundPolicy.fromString(r.colByName('refund_policy')),
     );
 
+    final forceChangeRaw = r.colByName('force_password_change');
+    final forcePasswordChange = forceChangeRaw == '1';
+    final pwdChangedRaw = r.colByName('password_changed_at');
+    final passwordChangedAt = pwdChangedRaw != null && pwdChangedRaw.isNotEmpty
+        ? DateTime.tryParse('${pwdChangedRaw}Z')
+        : null;
+
     final identity = StaffIdentity(
       id: int.parse(r.colByName('id') ?? '0'),
       hospitalCode: r.colByName('hospital_code') ?? '',
@@ -226,12 +235,101 @@ class StaffIdentityRepository {
       securePageLocks: parseSet(secureRaw),
       operationalFlags: flags,
       isActive: (r.colByName('is_active') ?? '1') == '1',
+      forcePasswordChange: forcePasswordChange,
+      passwordChangedAt: passwordChangedAt,
     );
 
     return StaffRecord(
       identity: identity,
       passwordHash: r.colByName('password_hash') ?? '',
     );
+  }
+
+  Future<void> updatePassword({
+    required String hospitalCode,
+    required int staffId,
+    required String newPasswordHash,
+    bool forcePasswordChange = false,
+  }) async {
+    await db.execute(
+      '''
+      UPDATE mc_staff
+      SET password_hash = :pwd,
+          force_password_change = :fchange,
+          password_changed_at = CURRENT_TIMESTAMP,
+          failed_login_count = 0,
+          locked_until = NULL
+      WHERE hospital_code = :hosp AND id = :id
+      ''',
+      {
+        'pwd': newPasswordHash,
+        'fchange': forcePasswordChange ? 1 : 0,
+        'hosp': hospitalCode,
+        'id': staffId,
+      },
+    );
+  }
+
+  Future<void> updateStatus({
+    required String hospitalCode,
+    required int staffId,
+    required bool isActive,
+  }) async {
+    await db.execute(
+      '''
+      UPDATE mc_staff
+      SET is_active = :active,
+          status = :status
+      WHERE hospital_code = :hosp AND id = :id
+      ''',
+      {
+        'active': isActive ? 1 : 0,
+        'status': isActive ? 'active' : 'inactive',
+        'hosp': hospitalCode,
+        'id': staffId,
+      },
+    );
+  }
+
+  Future<StaffIdentity> updateStaffProfile({
+    required String hospitalCode,
+    required int staffId,
+    required String fullName,
+    String? phone,
+    String? nationalId,
+    required MedCoreRole role,
+    String? departmentId,
+    String? clinicId,
+    String? doctorDefinitionCode,
+    String? specialty,
+  }) async {
+    await db.execute(
+      '''
+      UPDATE mc_staff
+      SET full_name = :name,
+          phone = :phone,
+          national_id = :nid,
+          role = :role,
+          department_id = :dept,
+          clinic_id = :clinic,
+          doctor_definition_code = :doc_code,
+          specialty = :spec
+      WHERE hospital_code = :hosp AND id = :id
+      ''',
+      {
+        'name': fullName,
+        'phone': phone,
+        'nid': nationalId,
+        'role': role.name,
+        'dept': departmentId,
+        'clinic': clinicId,
+        'doc_code': doctorDefinitionCode,
+        'spec': specialty,
+        'hosp': hospitalCode,
+        'id': staffId,
+      },
+    );
+    return (await findById(hospitalCode, staffId))!.identity;
   }
 }
 
@@ -313,6 +411,18 @@ class AuthSessionRepository {
       ''',
       {'tsha': tokenSha256, 'reason': reason},
     );
+  }
+
+  Future<int> revokeAllSessionsForStaff(String hospitalCode, int staffId, String reason) async {
+    final res = await db.execute(
+      '''
+      UPDATE mc_auth_sessions
+      SET is_active = 0, revoked_at = CURRENT_TIMESTAMP, revoke_reason = :reason
+      WHERE hospital_code = :hosp AND staff_id = :staff_id AND is_active = 1
+      ''',
+      {'hosp': hospitalCode, 'staff_id': staffId, 'reason': reason},
+    );
+    return res.affectedRows.toInt();
   }
 
   static String _fmtDt(DateTime dt) {

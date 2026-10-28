@@ -7,6 +7,10 @@ runtime/
 .dart_tool/
 .packages
 build/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/windows/flutter/ephemeral/
+backups/
 
 # OS / Temporary files
 Thumbs.db

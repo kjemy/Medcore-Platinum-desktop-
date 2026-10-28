@@ -9,11 +9,16 @@ class DeviceRecord {
   final String deviceId;
   final String deviceName;
   final String platform;
+  final String connectionType;
   final String hwFingerprintSha256;
   final String devicePublicKeyEd25519;
   final String roleScope;
+  final String medcoreVersion;
   final bool isTrustedSecureRuntime;
   final String status;
+  final String? lastSeenAt;
+  final String? lastIp;
+  final int? approvedBy;
 
   const DeviceRecord({
     required this.id,
@@ -21,14 +26,35 @@ class DeviceRecord {
     required this.deviceId,
     required this.deviceName,
     required this.platform,
+    this.connectionType = 'LOOPBACK',
     required this.hwFingerprintSha256,
     required this.devicePublicKeyEd25519,
     required this.roleScope,
+    this.medcoreVersion = '1.0.0-rc.1',
     required this.isTrustedSecureRuntime,
     required this.status,
+    this.lastSeenAt,
+    this.lastIp,
+    this.approvedBy,
   });
 
   bool get isActive => status.toUpperCase() == 'ACTIVE';
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'hospitalCode': hospitalCode,
+        'deviceId': deviceId,
+        'deviceName': deviceName,
+        'platform': platform,
+        'connectionType': connectionType,
+        'roleScope': roleScope,
+        'medcoreVersion': medcoreVersion,
+        'isTrustedSecureRuntime': isTrustedSecureRuntime,
+        'status': status,
+        'lastSeenAt': lastSeenAt,
+        'lastIp': lastIp,
+        'approvedBy': approvedBy,
+      };
 }
 
 class TenantGovernanceRepository {
@@ -93,40 +119,49 @@ class TenantGovernanceRepository {
     required String deviceId,
     required String deviceName,
     String platform = 'WINDOWS',
+    String connectionType = 'LOOPBACK',
     required String hwFingerprintSha256,
     required String devicePublicKeyEd25519,
     String roleScope = 'WORKSTATION',
+    String medcoreVersion = '1.0.0-rc.1',
     bool isTrustedSecureRuntime = true,
     String status = 'ACTIVE',
+    String? lastIp,
   }) async {
     await db.execute(
       '''
       INSERT INTO mc_devices (
-        hospital_code, device_id, device_name, platform,
+        hospital_code, device_id, device_name, platform, connection_type,
         hw_fingerprint_sha256, device_public_key_ed25519,
-        role_scope, is_trusted_secure_runtime, status, last_seen_at
+        role_scope, medcore_version, is_trusted_secure_runtime, status, last_seen_at, last_ip
       ) VALUES (
-        :hosp, :dev_id, :name, :platform,
+        :hosp, :dev_id, :name, :platform, :conn_type,
         :fp, :pubkey,
-        :scope, :trusted, :status, CURRENT_TIMESTAMP
+        :scope, :ver, :trusted, :status, CURRENT_TIMESTAMP, :ip
       )
       ON DUPLICATE KEY UPDATE
         device_name = VALUES(device_name),
+        connection_type = VALUES(connection_type),
         hw_fingerprint_sha256 = VALUES(hw_fingerprint_sha256),
+        medcore_version = VALUES(medcore_version),
         is_trusted_secure_runtime = VALUES(is_trusted_secure_runtime),
         status = VALUES(status),
-        last_seen_at = CURRENT_TIMESTAMP
+        last_seen_at = CURRENT_TIMESTAMP,
+        last_ip = COALESCE(VALUES(last_ip), last_ip)
       ''',
       {
         'hosp': hospitalCode,
         'dev_id': deviceId,
         'name': deviceName,
         'platform': platform,
+        'conn_type': connectionType,
         'fp': hwFingerprintSha256,
         'pubkey': devicePublicKeyEd25519,
         'scope': roleScope,
+        'ver': medcoreVersion,
         'trusted': isTrustedSecureRuntime ? 1 : 0,
         'status': status,
+        'ip': lastIp,
       },
     );
     return (await findDeviceById(deviceId))!;
@@ -145,11 +180,16 @@ class TenantGovernanceRepository {
       deviceId: r.colByName('device_id') ?? '',
       deviceName: r.colByName('device_name') ?? '',
       platform: r.colByName('platform') ?? 'WINDOWS',
+      connectionType: r.colByName('connection_type') ?? 'LOOPBACK',
       hwFingerprintSha256: r.colByName('hw_fingerprint_sha256') ?? '',
       devicePublicKeyEd25519: r.colByName('device_public_key_ed25519') ?? '',
       roleScope: r.colByName('role_scope') ?? 'WORKSTATION',
+      medcoreVersion: r.colByName('medcore_version') ?? '1.0.0-rc.1',
       isTrustedSecureRuntime: (r.colByName('is_trusted_secure_runtime') ?? '0') == '1',
       status: r.colByName('status') ?? 'PENDING',
+      lastSeenAt: r.colByName('last_seen_at'),
+      lastIp: r.colByName('last_ip'),
+      approvedBy: r.colByName('approved_by') != null ? int.tryParse(r.colByName('approved_by')!) : null,
     );
   }
 

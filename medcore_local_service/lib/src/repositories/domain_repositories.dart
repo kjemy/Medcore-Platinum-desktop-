@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../db/db_client.dart';
 import '../db/transaction_manager.dart';
 import '../security/rbac_evaluator.dart';
+import 'clinical_financial_repositories.dart';
 import 'scope_context.dart';
 
 /// ---------------------------------------------------------------------------
@@ -1839,9 +1840,22 @@ class DualControlRepository {
       final actionType = req.colByName('action_type');
       if (approve && actionType == 'VISIT_REFUND') {
         final visitId = int.parse(req.colByName('target_entity_id') ?? '0');
-        await tx.execute(
-          "UPDATE mc_visits SET status = 'REFUNDED' WHERE hospital_code = :hosp AND id = :vid",
-          {'hosp': scope.hospitalCode, 'vid': visitId},
+        final reqAmt = Decimal.tryParse(req.colByName('requested_amount') ?? '0.0000') ?? Decimal.zero;
+        Map<String, dynamic> payloadMap = {};
+        final rawPayload = req.colByName('payload_json');
+        if (rawPayload != null && rawPayload.isNotEmpty) {
+          try {
+            payloadMap = jsonDecode(rawPayload) as Map<String, dynamic>;
+          } catch (_) {}
+        }
+        final shiftId = payloadMap['shiftId'] != null ? int.tryParse(payloadMap['shiftId'].toString()) : null;
+        await VisitFinancialService.executeRefundReversalInternal(
+          tx: tx,
+          scope: scope,
+          visitId: visitId,
+          refundAmount: reqAmt,
+          reason: decisionNotes ?? 'Dual control approved refund',
+          shiftId: shiftId,
         );
       }
 

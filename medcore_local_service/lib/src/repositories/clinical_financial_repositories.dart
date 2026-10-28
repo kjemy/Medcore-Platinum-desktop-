@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:decimal/decimal.dart';
 import 'package:uuid/uuid.dart';
 import '../db/db_client.dart';
@@ -14,6 +15,18 @@ class PatientRecord {
   final String fullName;
   final String gender;
   final String phone;
+  final String? dateOfBirth;
+  final int? age;
+  final String? nationalId;
+  final String? bloodGroup;
+  final String? address;
+  final String? insuranceCompanyId;
+  final String? insurancePolicyNo;
+  final String? emergencyContactName;
+  final String? emergencyContactPhone;
+  final List<String> allergies;
+  final List<String> chronicConditions;
+  final Map<String, dynamic> clinicalHistoryMeta;
   final int? assignedDoctorId;
   final String? departmentId;
   final Decimal balance;
@@ -27,6 +40,18 @@ class PatientRecord {
     required this.fullName,
     required this.gender,
     required this.phone,
+    this.dateOfBirth,
+    this.age,
+    this.nationalId,
+    this.bloodGroup,
+    this.address,
+    this.insuranceCompanyId,
+    this.insurancePolicyNo,
+    this.emergencyContactName,
+    this.emergencyContactPhone,
+    this.allergies = const <String>[],
+    this.chronicConditions = const <String>[],
+    this.clinicalHistoryMeta = const <String, dynamic>{},
     this.assignedDoctorId,
     this.departmentId,
     required this.balance,
@@ -41,6 +66,18 @@ class PatientRecord {
         'fullName': fullName,
         'gender': gender,
         'phone': phone,
+        if (dateOfBirth != null) 'dateOfBirth': dateOfBirth,
+        if (age != null) 'age': age,
+        if (nationalId != null) 'nationalId': nationalId,
+        if (bloodGroup != null) 'bloodGroup': bloodGroup,
+        if (address != null) 'address': address,
+        if (insuranceCompanyId != null) 'insuranceCompanyId': insuranceCompanyId,
+        if (insurancePolicyNo != null) 'insurancePolicyNo': insurancePolicyNo,
+        if (emergencyContactName != null) 'emergencyContactName': emergencyContactName,
+        if (emergencyContactPhone != null) 'emergencyContactPhone': emergencyContactPhone,
+        if (allergies.isNotEmpty) 'allergies': allergies,
+        if (chronicConditions.isNotEmpty) 'chronicConditions': chronicConditions,
+        if (clinicalHistoryMeta.isNotEmpty) 'clinicalHistoryMeta': clinicalHistoryMeta,
         'assignedDoctorId': assignedDoctorId,
         'departmentId': departmentId,
         'balance': balance.toStringAsFixed(4),
@@ -51,6 +88,7 @@ class PatientRecord {
 
 class PatientRepository {
   final SqlExecutor db;
+  static const _uuid = Uuid();
 
   PatientRepository(this.db);
 
@@ -60,16 +98,30 @@ class PatientRepository {
     required String fullName,
     required String phone,
     String gender = 'male',
+    String? dateOfBirth,
+    int? age,
+    String? nationalId,
+    String? bloodGroup,
+    String? address,
+    String? insuranceCompanyId,
+    String? insurancePolicyNo,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+    List<String>? allergies,
+    List<String>? chronicConditions,
+    Map<String, dynamic>? clinicalHistoryMeta,
     int? assignedDoctorId,
     String? departmentId,
   }) async {
     final res = await db.execute(
       '''
       INSERT INTO mc_patients (
-        hospital_code, mrn, full_name, gender, phone,
+        hospital_code, mrn, full_name, gender, date_of_birth, age, phone,
+        national_id, blood_group, address, insurance_company_id, insurance_policy_no,
         assigned_doctor_id, department_id, balance, created_by, is_deleted
       ) VALUES (
-        :hosp, :mrn, :name, :gender, :phone,
+        :hosp, :mrn, :name, :gender, :dob, :age, :phone,
+        :nat_id, :blood, :addr, :ins_co, :ins_pol,
         :doc_id, :dept, '0.0000', :creator, 0
       )
       ''',
@@ -78,13 +130,66 @@ class PatientRepository {
         'mrn': mrn,
         'name': fullName,
         'gender': gender,
+        'dob': (dateOfBirth != null && dateOfBirth.trim().isNotEmpty) ? dateOfBirth.trim() : null,
+        'age': age,
         'phone': phone,
+        'nat_id': (nationalId != null && nationalId.trim().isNotEmpty) ? nationalId.trim() : null,
+        'blood': (bloodGroup != null && bloodGroup.trim().isNotEmpty) ? bloodGroup.trim() : null,
+        'addr': (address != null && address.trim().isNotEmpty) ? address.trim() : null,
+        'ins_co': (insuranceCompanyId != null && insuranceCompanyId.trim().isNotEmpty)
+            ? insuranceCompanyId.trim()
+            : null,
+        'ins_pol': (insurancePolicyNo != null && insurancePolicyNo.trim().isNotEmpty)
+            ? insurancePolicyNo.trim()
+            : null,
         'doc_id': assignedDoctorId ?? (scope.actor.role == MedCoreRole.Doctor ? scope.actor.id : null),
         'dept': departmentId ?? scope.actor.departmentId,
         'creator': scope.actor.id,
       },
     );
     final id = res.lastInsertID.toInt();
+
+    final hasProfileData = (emergencyContactName != null && emergencyContactName.trim().isNotEmpty) ||
+        (emergencyContactPhone != null && emergencyContactPhone.trim().isNotEmpty) ||
+        (allergies != null && allergies.isNotEmpty) ||
+        (chronicConditions != null && chronicConditions.isNotEmpty) ||
+        (clinicalHistoryMeta != null && clinicalHistoryMeta.isNotEmpty);
+
+    if (hasProfileData) {
+      await db.execute(
+        '''
+        INSERT INTO mc_patient_profiles (
+          hospital_code, public_id, tenant_id, patient_id, date_of_birth,
+          emergency_contact_name, emergency_contact_phone, address,
+          insurance_provider_id, insurance_policy_number,
+          chronic_conditions_json, allergies_json, medical_history_json,
+          status, created_at, updated_at
+        ) VALUES (
+          :hosp, :pub_id, :tenant, :pat_id, :dob,
+          :em_name, :em_phone, :addr,
+          :ins_co, :ins_pol,
+          :chronic_json, :allergies_json, :hist_json,
+          'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+        )
+        ''',
+        {
+          'hosp': scope.hospitalCode,
+          'pub_id': _uuid.v4(),
+          'tenant': scope.hospitalCode,
+          'pat_id': id,
+          'dob': (dateOfBirth != null && dateOfBirth.trim().isNotEmpty) ? dateOfBirth.trim() : null,
+          'em_name': emergencyContactName?.trim(),
+          'em_phone': emergencyContactPhone?.trim(),
+          'addr': address?.trim(),
+          'ins_co': insuranceCompanyId?.trim(),
+          'ins_pol': insurancePolicyNo?.trim(),
+          'chronic_json': chronicConditions != null ? jsonEncode(chronicConditions) : null,
+          'allergies_json': allergies != null ? jsonEncode(allergies) : null,
+          'hist_json': clinicalHistoryMeta != null ? jsonEncode(clinicalHistoryMeta) : null,
+        },
+      );
+    }
+
     return (await findByIdUnscoped(scope.hospitalCode, id))!;
   }
 
@@ -93,9 +198,17 @@ class PatientRepository {
     if (scope.isTenantWide) {
       final res = await db.execute(
         '''
-        SELECT * FROM mc_patients
-        WHERE hospital_code = :hosp AND is_deleted = 0
-        ORDER BY id ASC
+        SELECT p.*,
+               pp.emergency_contact_name,
+               pp.emergency_contact_phone,
+               pp.allergies_json,
+               pp.chronic_conditions_json,
+               pp.medical_history_json
+        FROM mc_patients p
+        LEFT JOIN mc_patient_profiles pp
+          ON pp.hospital_code = p.hospital_code AND pp.patient_id = p.id
+        WHERE p.hospital_code = :hosp AND p.is_deleted = 0
+        ORDER BY p.id ASC
         ''',
         {'hosp': scope.hospitalCode},
       );
@@ -104,11 +217,19 @@ class PatientRepository {
       // Own-only scope: restrict to records assigned to or created by this employee
       final res = await db.execute(
         '''
-        SELECT * FROM mc_patients
-        WHERE hospital_code = :hosp
-          AND is_deleted = 0
-          AND (assigned_doctor_id = :actor_id OR created_by = :actor_id)
-        ORDER BY id ASC
+        SELECT p.*,
+               pp.emergency_contact_name,
+               pp.emergency_contact_phone,
+               pp.allergies_json,
+               pp.chronic_conditions_json,
+               pp.medical_history_json
+        FROM mc_patients p
+        LEFT JOIN mc_patient_profiles pp
+          ON pp.hospital_code = p.hospital_code AND pp.patient_id = p.id
+        WHERE p.hospital_code = :hosp
+          AND p.is_deleted = 0
+          AND (p.assigned_doctor_id = :actor_id OR p.created_by = :actor_id)
+        ORDER BY p.id ASC
         ''',
         {
           'hosp': scope.hospitalCode,
@@ -121,7 +242,19 @@ class PatientRepository {
 
   Future<PatientRecord?> findByIdUnscoped(String hospitalCode, int id) async {
     final res = await db.execute(
-      'SELECT * FROM mc_patients WHERE hospital_code = :hosp AND id = :id LIMIT 1',
+      '''
+      SELECT p.*,
+             pp.emergency_contact_name,
+             pp.emergency_contact_phone,
+             pp.allergies_json,
+             pp.chronic_conditions_json,
+             pp.medical_history_json
+      FROM mc_patients p
+      LEFT JOIN mc_patient_profiles pp
+        ON pp.hospital_code = p.hospital_code AND pp.patient_id = p.id
+      WHERE p.hospital_code = :hosp AND p.id = :id
+      LIMIT 1
+      ''',
       {'hosp': hospitalCode, 'id': id},
     );
     if (res.rows.isEmpty) return null;
@@ -145,6 +278,24 @@ class PatientRepository {
     );
   }
 
+  static List<String> _decodeStringList(String? rawJson) {
+    if (rawJson == null || rawJson.trim().isEmpty) return const <String>[];
+    try {
+      final decoded = jsonDecode(rawJson);
+      if (decoded is List) return decoded.map((e) => e.toString()).toList();
+    } catch (_) {}
+    return const <String>[];
+  }
+
+  static Map<String, dynamic> _decodeMap(String? rawJson) {
+    if (rawJson == null || rawJson.trim().isEmpty) return const <String, dynamic>{};
+    try {
+      final decoded = jsonDecode(rawJson);
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (_) {}
+    return const <String, dynamic>{};
+  }
+
   PatientRecord _mapRow(dynamic r) {
     return PatientRecord(
       id: int.parse(r.colByName('id') ?? '0'),
@@ -153,6 +304,18 @@ class PatientRepository {
       fullName: r.colByName('full_name') ?? '',
       gender: r.colByName('gender') ?? 'male',
       phone: r.colByName('phone') ?? '',
+      dateOfBirth: r.colByName('date_of_birth'),
+      age: r.colByName('age') != null ? int.tryParse(r.colByName('age')!) : null,
+      nationalId: r.colByName('national_id'),
+      bloodGroup: r.colByName('blood_group'),
+      address: r.colByName('address'),
+      insuranceCompanyId: r.colByName('insurance_company_id'),
+      insurancePolicyNo: r.colByName('insurance_policy_no'),
+      emergencyContactName: r.colByName('emergency_contact_name'),
+      emergencyContactPhone: r.colByName('emergency_contact_phone'),
+      allergies: _decodeStringList(r.colByName('allergies_json')),
+      chronicConditions: _decodeStringList(r.colByName('chronic_conditions_json')),
+      clinicalHistoryMeta: _decodeMap(r.colByName('medical_history_json')),
       assignedDoctorId: r.colByName('assigned_doctor_id') != null
           ? int.tryParse(r.colByName('assigned_doctor_id')!)
           : null,
@@ -557,6 +720,7 @@ class VisitFinancialService {
     required int visitId,
     required Decimal refundAmount,
     required String reason,
+    int? shiftId,
   }) async {
     final flags = scope.actor.operationalFlags;
     if (!flags.canMakeRefunds || flags.refundPolicy == RefundPolicy.none) {
@@ -582,6 +746,7 @@ class VisitFinancialService {
             'visitId': visitId,
             'refundAmount': refundAmount.toStringAsFixed(4),
             'reason': reason,
+            if (shiftId != null) 'shiftId': shiftId,
           },
           requesterStaffId: scope.actor.id,
           reason: reason,
@@ -603,25 +768,440 @@ class VisitFinancialService {
       });
     }
 
-    // Direct Refund Policy (`RefundPolicy.direct`)
+    // Direct Refund Policy (`RefundPolicy.direct`) — Batch 1 Full Authoritative Reversal
     return await txManager.runInTransaction((tx) async {
-      await tx.execute(
-        "UPDATE mc_visits SET status = 'REFUNDED' WHERE hospital_code = :hosp AND id = :vid",
-        {'hosp': scope.hospitalCode, 'vid': visitId},
+      return await executeRefundReversalInternal(
+        tx: tx,
+        scope: scope,
+        visitId: visitId,
+        refundAmount: refundAmount,
+        reason: reason,
+        shiftId: shiftId,
       );
+    });
+  }
+
+  /// Atomically executes full double-entry financial reversal for a refunded visit (Batch 1).
+  /// Reverses every original posting symmetrically (DEBIT <-> CREDIT) to guarantee SUM(DEBIT) == SUM(CREDIT).
+  /// Updates shift cash_out/expected_cash and patient AR balance.
+  static Future<Map<String, dynamic>> executeRefundReversalInternal({
+    required TxContext tx,
+    required ScopeContext scope,
+    required int visitId,
+    required Decimal refundAmount,
+    required String reason,
+    int? shiftId,
+    String? idempotencyKey,
+  }) async {
+    final vRes = await tx.execute(
+      '''
+      SELECT id, hospital_code, visit_number, patient_id, shift_id,
+             status, gross_amount, net_amount, paid_amount, balance_amount
+      FROM mc_visits
+      WHERE hospital_code = :hosp AND id = :vid
+      FOR UPDATE
+      ''',
+      {'hosp': scope.hospitalCode, 'vid': visitId},
+    );
+    if (vRes.rows.isEmpty) {
+      throw StateError('VISIT_NOT_FOUND: Visit $visitId not found in tenant ${scope.hospitalCode}.');
+    }
+    final visitRow = vRes.rows.first;
+    final currentStatus = visitRow.colByName('status') ?? 'ACTIVE';
+    if (currentStatus == 'REFUNDED') {
+      throw StateError('VISIT_ALREADY_REFUNDED: Visit $visitId is already refunded.');
+    }
+    if (currentStatus == 'CANCELLED') {
+      throw StateError('VISIT_NOT_REFUNDABLE: Visit $visitId is cancelled.');
+    }
+
+    final patientId = int.tryParse(visitRow.colByName('patient_id') ?? '0') ?? 0;
+    final origVisitShiftId = int.tryParse(visitRow.colByName('shift_id') ?? '0');
+    final activeShiftId = shiftId ?? origVisitShiftId;
+
+    // Fetch original financial event
+    final evRes = await tx.execute(
+      '''
+      SELECT id, event_uuid, gross_amount, discount_amount, net_amount,
+             paid_amount, insurance_covered_amount, patient_responsibility_amount,
+             balance_amount, commission_basis_type, commission_basis_amount,
+             commission_rate, commission_amount, shift_id
+      FROM mc_financial_events
+      WHERE hospital_code = :hosp
+        AND source_entity_type = 'VISIT'
+        AND source_entity_id = :vid
+        AND event_type = 'VISIT_CREATE'
+      ORDER BY id ASC
+      LIMIT 1
+      FOR UPDATE
+      ''',
+      {'hosp': scope.hospitalCode, 'vid': visitId},
+    );
+
+    int? revEventId;
+    if (evRes.rows.isNotEmpty) {
+      final origEvent = evRes.rows.first;
+      final origEventId = int.parse(origEvent.colByName('id')!);
+      final origPaid = Decimal.tryParse(origEvent.colByName('paid_amount') ?? '0.0000') ?? Decimal.zero;
+      final origBal = Decimal.tryParse(origEvent.colByName('balance_amount') ?? '0.0000') ?? Decimal.zero;
+
+      // 1. Fetch original postings
+      final postRes = await tx.execute(
+        '''
+        SELECT id, posting_type, account_bucket, direction, amount,
+               beneficiary_type, beneficiary_id, shift_id
+        FROM mc_financial_postings
+        WHERE hospital_code = :hosp AND event_id = :evid
+        ''',
+        {'hosp': scope.hospitalCode, 'evid': origEventId},
+      );
+
+      // 2. Insert reversing financial event
+      final revEventUuid = 'EV-REV-${_uuid.v4()}';
+      final actualIdemp = idempotencyKey ?? 'REFUND-VIS-$visitId-${_uuid.v4()}';
+      final insEvRes = await tx.execute(
+        '''
+        INSERT INTO mc_financial_events (
+          event_uuid, hospital_code, idempotency_key, event_type,
+          source_module, source_entity_type, source_entity_id, shift_id,
+          gross_amount, discount_amount, net_amount, paid_amount,
+          insurance_covered_amount, patient_responsibility_amount, balance_amount,
+          commission_basis_type, commission_basis_amount, commission_rate, commission_amount,
+          reversal_of_event_id, status, created_by
+        ) VALUES (
+          :uuid, :hosp, :idemp, 'VISIT_REFUND',
+          'RECEPTION', 'VISIT', :vid, :sid,
+          :gross, :disc, :net, :paid,
+          :ins, :presp, :bal,
+          :cbasis, :camt_basis, :crate, :camt,
+          :orig_evid, 'POSTED', :creator
+        )
+        ''',
+        {
+          'uuid': revEventUuid,
+          'hosp': scope.hospitalCode,
+          'idemp': actualIdemp,
+          'vid': visitId,
+          'sid': activeShiftId,
+          'gross': origEvent.colByName('gross_amount') ?? '0.0000',
+          'disc': origEvent.colByName('discount_amount') ?? '0.0000',
+          'net': origEvent.colByName('net_amount') ?? '0.0000',
+          'paid': origEvent.colByName('paid_amount') ?? '0.0000',
+          'ins': origEvent.colByName('insurance_covered_amount') ?? '0.0000',
+          'presp': origEvent.colByName('patient_responsibility_amount') ?? '0.0000',
+          'bal': origEvent.colByName('balance_amount') ?? '0.0000',
+          'cbasis': origEvent.colByName('commission_basis_type'),
+          'camt_basis': origEvent.colByName('commission_basis_amount') ?? '0.0000',
+          'crate': origEvent.colByName('commission_rate') ?? '0.0000',
+          'camt': origEvent.colByName('commission_amount') ?? '0.0000',
+          'orig_evid': origEventId,
+          'creator': scope.actor.id,
+        },
+      );
+      revEventId = insEvRes.lastInsertID.toInt();
+
+      // 3. Insert symmetric reversal postings: invert CREDIT <-> DEBIT
+      for (final pRow in postRes.rows) {
+        final origDir = pRow.colByName('direction') ?? 'CREDIT';
+        final revDir = origDir == 'CREDIT' ? 'DEBIT' : 'CREDIT';
+        final pAmt = pRow.colByName('amount') ?? '0.0000';
+        final origType = pRow.colByName('posting_type') ?? 'GENERIC';
+        final revType = origType.startsWith('REVERSAL_') ? origType : 'REVERSAL_$origType';
+
+        await tx.execute(
+          '''
+          INSERT INTO mc_financial_postings (
+            posting_uuid, hospital_code, event_id, posting_type,
+            account_bucket, direction, amount, beneficiary_type, beneficiary_id, shift_id, status
+          ) VALUES (
+            :puuid, :hosp, :evid, :ptype,
+            :bucket, :dir, :amt, :btype, :bid, :sid, 'POSTED'
+          )
+          ''',
+          {
+            'puuid': 'POST-REV-${_uuid.v4()}',
+            'hosp': scope.hospitalCode,
+            'evid': revEventId,
+            'ptype': revType,
+            'bucket': pRow.colByName('account_bucket') ?? 'REVENUE',
+            'dir': revDir,
+            'amt': pAmt,
+            'btype': pRow.colByName('beneficiary_type'),
+            'bid': pRow.colByName('beneficiary_id') != null ? int.tryParse(pRow.colByName('beneficiary_id')!) : null,
+            'sid': activeShiftId,
+          },
+        );
+      }
+
+      // 4. Update Shift cash outflow if visit was paid in cash
+      if (origPaid > Decimal.zero && activeShiftId != null) {
+        await tx.execute(
+          '''
+          UPDATE mc_shifts
+          SET cash_out = cash_out + :paid, expected_cash = expected_cash - :paid
+          WHERE hospital_code = :hosp AND id = :sid AND status = 'OPEN'
+          ''',
+          {
+            'hosp': scope.hospitalCode,
+            'sid': activeShiftId,
+            'paid': origPaid.toStringAsFixed(4),
+          },
+        );
+      }
+
+      // 5. Update Patient balance if visit had outstanding AR
+      if (origBal > Decimal.zero && patientId > 0) {
+        await tx.execute(
+          '''
+          UPDATE mc_patients
+          SET balance = balance - :bal
+          WHERE hospital_code = :hosp AND id = :pid
+          ''',
+          {
+            'hosp': scope.hospitalCode,
+            'pid': patientId,
+            'bal': origBal.toStringAsFixed(4),
+          },
+        );
+      }
+    }
+
+    // 6. Transition visit status to REFUNDED
+    await tx.execute(
+      "UPDATE mc_visits SET status = 'REFUNDED' WHERE hospital_code = :hosp AND id = :vid",
+      {'hosp': scope.hospitalCode, 'vid': visitId},
+    );
+
+    // 7. Write audit log
+    await tx.writeAuditLog(
+      hospitalCode: scope.hospitalCode,
+      actorStaffId: scope.actor.id,
+      actorRole: scope.actor.role.name,
+      deviceId: scope.deviceId,
+      action: 'refund.direct_executed',
+      entityType: 'mc_visits',
+      entityId: visitId.toString(),
+      afterState: {
+        'status': 'REFUNDED',
+        'refundAmount': refundAmount.toStringAsFixed(4),
+        'reason': reason,
+        if (revEventId != null) 'reversalEventId': revEventId,
+      },
+    );
+
+    return {
+      'status': 'EXECUTED_DIRECT',
+      'visitId': visitId,
+      'refundAmount': refundAmount.toStringAsFixed(4),
+      if (revEventId != null) 'reversalEventId': revEventId,
+    };
+  }
+
+  /// Standalone PATIENT_AR Collection (Batch 2):
+  /// Allows collecting debt post-visit from a patient into an active cashier shift.
+  /// Postings: DEBIT CASH_ON_HAND / CREDIT ACCOUNTS_RECEIVABLE_PATIENT
+  /// Invariant: SUM(DEBIT) == SUM(CREDIT)
+  Future<Map<String, dynamic>> collectPatientAr({
+    required ScopeContext scope,
+    required int patientId,
+    required Decimal amount,
+    required int shiftId,
+    required String paymentMethod,
+    String? idempotencyKey,
+    String? notes,
+  }) async {
+    if (amount <= Decimal.zero) {
+      throw StateError('INVALID_COLLECTION_AMOUNT: Amount must be strictly greater than 0.');
+    }
+
+    final actualIdemp = idempotencyKey ?? 'AR-COLL-$patientId-${_uuid.v4()}';
+
+    return await txManager.runInTransaction((tx) async {
+      // 1. Idempotency check
+      final existingRes = await tx.execute(
+        '''
+        SELECT id, event_uuid, gross_amount, paid_amount, balance_amount
+        FROM mc_financial_events
+        WHERE hospital_code = :hosp AND idempotency_key = :idemp
+        LIMIT 1
+        ''',
+        {'hosp': scope.hospitalCode, 'idemp': actualIdemp},
+      );
+      if (existingRes.rows.isNotEmpty) {
+        final row = existingRes.rows.first;
+        return {
+          'idempotentReplay': true,
+          'eventId': int.parse(row.colByName('id')!),
+          'eventUuid': row.colByName('event_uuid'),
+          'collectedAmount': row.colByName('paid_amount'),
+          'remainingBalance': row.colByName('balance_amount'),
+        };
+      }
+
+      // 2. Lock and verify shift is OPEN
+      final shiftRes = await tx.execute(
+        '''
+        SELECT id, status, cashier_staff_id, expected_cash
+        FROM mc_shifts
+        WHERE hospital_code = :hosp AND id = :sid
+        FOR UPDATE
+        ''',
+        {'hosp': scope.hospitalCode, 'sid': shiftId},
+      );
+      if (shiftRes.rows.isEmpty) {
+        throw StateError('SHIFT_NOT_FOUND: Shift $shiftId not found in tenant ${scope.hospitalCode}.');
+      }
+      if (shiftRes.rows.first.colByName('status') != 'OPEN') {
+        throw StateError('SHIFT_NOT_OPEN: Cannot collect AR into closed shift $shiftId.');
+      }
+
+      // 3. Lock and verify patient balance
+      final patRes = await tx.execute(
+        '''
+        SELECT id, mrn, full_name, balance
+        FROM mc_patients
+        WHERE hospital_code = :hosp AND id = :pid
+        FOR UPDATE
+        ''',
+        {'hosp': scope.hospitalCode, 'pid': patientId},
+      );
+      if (patRes.rows.isEmpty) {
+        throw StateError('PATIENT_NOT_FOUND: Patient $patientId not found in tenant ${scope.hospitalCode}.');
+      }
+      final currentBalance = Decimal.tryParse(patRes.rows.first.colByName('balance') ?? '0.0000') ?? Decimal.zero;
+      if (amount > currentBalance) {
+        throw StateError('OVER_COLLECTION_DENIED: Requested collection of $amount exceeds outstanding balance $currentBalance.');
+      }
+
+      final newBalance = currentBalance - amount;
+
+      // 4. Create financial event
+      final eventUuid = 'EV-AR-${_uuid.v4()}';
+      final evRes = await tx.execute(
+        '''
+        INSERT INTO mc_financial_events (
+          event_uuid, hospital_code, idempotency_key, event_type,
+          source_module, source_entity_type, source_entity_id, shift_id,
+          gross_amount, discount_amount, net_amount, paid_amount,
+          insurance_covered_amount, patient_responsibility_amount, balance_amount,
+          status, created_by
+        ) VALUES (
+          :uuid, :hosp, :idemp, 'AR_COLLECTION',
+          'FINANCE', 'PATIENT', :pid, :sid,
+          :amt, '0.0000', :amt, :amt,
+          '0.0000', :amt, :bal,
+          'POSTED', :creator
+        )
+        ''',
+        {
+          'uuid': eventUuid,
+          'hosp': scope.hospitalCode,
+          'idemp': actualIdemp,
+          'pid': patientId,
+          'sid': shiftId,
+          'amt': amount.toStringAsFixed(4),
+          'bal': newBalance.toStringAsFixed(4),
+          'creator': scope.actor.id,
+        },
+      );
+      final eventId = evRes.lastInsertID.toInt();
+
+      // 5. Insert Balanced Double-Entry Postings (SUM(DEBIT) == SUM(CREDIT))
+      // Leg 1: Cash/Payment Inflow (DEBIT CASH_ON_HAND)
+      await tx.execute(
+        '''
+        INSERT INTO mc_financial_postings (
+          posting_uuid, hospital_code, event_id, posting_type,
+          account_bucket, direction, amount, shift_id, status
+        ) VALUES (
+          :puuid, :hosp, :evid, 'AR_COLLECTION_CASH',
+          'CASH_ON_HAND', 'DEBIT', :amt, :sid, 'POSTED'
+        )
+        ''',
+        {
+          'puuid': 'POST-AR-CASH-${_uuid.v4()}',
+          'hosp': scope.hospitalCode,
+          'evid': eventId,
+          'amt': amount.toStringAsFixed(4),
+          'sid': shiftId,
+        },
+      );
+
+      // Leg 2: AR Asset Relief (CREDIT ACCOUNTS_RECEIVABLE_PATIENT)
+      await tx.execute(
+        '''
+        INSERT INTO mc_financial_postings (
+          posting_uuid, hospital_code, event_id, posting_type,
+          account_bucket, direction, amount, shift_id, status
+        ) VALUES (
+          :puuid, :hosp, :evid, 'AR_COLLECTION_RELIEF',
+          'ACCOUNTS_RECEIVABLE_PATIENT', 'CREDIT', :amt, :sid, 'POSTED'
+        )
+        ''',
+        {
+          'puuid': 'POST-AR-RELIEF-${_uuid.v4()}',
+          'hosp': scope.hospitalCode,
+          'evid': eventId,
+          'amt': amount.toStringAsFixed(4),
+          'sid': shiftId,
+        },
+      );
+
+      // 6. Update Shift Cash
+      await tx.execute(
+        '''
+        UPDATE mc_shifts
+        SET cash_in = cash_in + :amt, expected_cash = expected_cash + :amt
+        WHERE hospital_code = :hosp AND id = :sid
+        ''',
+        {
+          'hosp': scope.hospitalCode,
+          'sid': shiftId,
+          'amt': amount.toStringAsFixed(4),
+        },
+      );
+
+      // 7. Update Patient Balance
+      await tx.execute(
+        '''
+        UPDATE mc_patients
+        SET balance = :bal
+        WHERE hospital_code = :hosp AND id = :pid
+        ''',
+        {
+          'hosp': scope.hospitalCode,
+          'pid': patientId,
+          'bal': newBalance.toStringAsFixed(4),
+        },
+      );
+
+      // 8. Write Audit Log
       await tx.writeAuditLog(
         hospitalCode: scope.hospitalCode,
         actorStaffId: scope.actor.id,
         actorRole: scope.actor.role.name,
         deviceId: scope.deviceId,
-        action: 'refund.direct_executed',
-        entityType: 'mc_visits',
-        entityId: visitId.toString(),
+        action: 'ar.collection',
+        entityType: 'mc_financial_events',
+        entityId: eventId.toString(),
+        afterState: {
+          'patientId': patientId,
+          'collectedAmount': amount.toStringAsFixed(4),
+          'remainingBalance': newBalance.toStringAsFixed(4),
+          'shiftId': shiftId,
+          'paymentMethod': paymentMethod,
+          'notes': notes,
+        },
       );
+
       return {
-        'status': 'EXECUTED_DIRECT',
-        'visitId': visitId,
-        'refundAmount': refundAmount.toStringAsFixed(4),
+        'idempotentReplay': false,
+        'eventId': eventId,
+        'eventUuid': eventUuid,
+        'patientId': patientId,
+        'collectedAmount': amount.toStringAsFixed(4),
+        'remainingBalance': newBalance.toStringAsFixed(4),
+        'shiftId': shiftId,
       };
     });
   }

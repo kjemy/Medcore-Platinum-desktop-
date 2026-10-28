@@ -19,6 +19,8 @@ class StaffIdentity {
   final Set<String> securePageLocks;
   final OperationalFlags operationalFlags;
   final bool isActive;
+  final bool forcePasswordChange;
+  final DateTime? passwordChangedAt;
 
   const StaffIdentity({
     required this.id,
@@ -38,6 +40,8 @@ class StaffIdentity {
     required this.securePageLocks,
     required this.operationalFlags,
     required this.isActive,
+    this.forcePasswordChange = false,
+    this.passwordChangedAt,
   });
 
   Map<String, dynamic> toPublicJson(Set<String> effectivePermissions) => {
@@ -58,6 +62,8 @@ class StaffIdentity {
         'securePageLocks': securePageLocks.toList()..sort(),
         'operationalFlags': operationalFlags.toJson(),
         'isActive': isActive,
+        'forcePasswordChange': forcePasswordChange,
+        'passwordChangedAt': passwordChangedAt?.toIso8601String(),
       };
 }
 

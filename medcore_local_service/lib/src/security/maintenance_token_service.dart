@@ -76,6 +76,7 @@ class MaintenanceTokenService {
     required String expectedInstallationId,
     TrustedTimeEvidence? trustedTimeEvidence,
     TrustedTimeVerifier? trustedTimeVerifier,
+    Set<String> allowedActions = const {'UNLOCK_CLOCK_ROLLBACK'},
     @Deprecated('Ignored; this value is not trusted time.') DateTime? effectiveTime,
   }) {
     final clean = rawToken.trim();
@@ -132,10 +133,10 @@ class MaintenanceTokenService {
 
     // 2. Verify Action
     final action = payload['act']?.toString().trim() ?? '';
-    if (action != 'UNLOCK_CLOCK_ROLLBACK') {
+    if (!allowedActions.contains(action)) {
       throw MaintenanceTokenException(
         'INVALID_ACTION',
-        'Token action "$action" is unauthorized for clock recovery (expected UNLOCK_CLOCK_ROLLBACK).',
+        'Token action "$action" is unauthorized (expected ${allowedActions.join(', ')}).',
       );
     }
 

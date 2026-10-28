@@ -57,3 +57,52 @@ medcore_client/
    - iPadOS: Apple Enterprise / Ad-Hoc / App Store code signing with provisioning profile validation.
 3. **Runtime Binary & Certificate Integrity**:
    - Pin the Hospital Local Root CA / Server public key and verify the native screen-protection plugin `.dll` SHA-256 hash at startup.
+
+
+---
+
+## 4. Implemented Windows Desktop Foundation (`medcore_desktop` — `2026-10-28`)
+
+The Windows Desktop client foundation has been implemented at `medcore_desktop/` strictly adhering to the architecture:
+
+```text
+Flutter Desktop (medcore_desktop)
+       ↓  HTTP JSON (Bearer Staff Token OR X-MedCore-Tech-Token)
+Local MedCore Service (medcore_local_service)
+       ↓  Loopback TCP (127.0.0.1)
+MariaDB 11.4.4 (Authoritative Truth)
+```
+
+### 4.1 Physical Package Layout (`FACT`)
+```text
+medcore_desktop/
+├── pubspec.yaml                                  # http, decimal, crypto — ZERO mysql_client dependency
+├── lib/
+│   ├── main.dart                                 # MedCorePlatinumDesktopApp centralized MaterialApp & MediaQuery fontScale
+│   ├── core/
+│   │   ├── api/medcore_api_client.dart           # Typed HTTP client, structured MedCoreApiException, zero DB access
+│   │   ├── models/product_models.dart            # BrandingConfig, FacilityConfigModel, AuthenticatedStaffUser, TechnicianSessionInfo
+│   │   ├── navigation/desktop_navigation_catalog.dart # RBAC permission + 17-module entitlement route catalog
+│   │   ├── shell/medcore_desktop_shell.dart      # Adaptive sidebar, facility/edition header, active-route entitlement guard
+│   │   └── state/medcore_app_controller.dart     # Separated staff vs technician session state & configuration loader
+│   └── features/
+│       ├── auth/connection_and_login_screen.dart # Service health, LAN/Wi-Fi pairing request, staff login, isolated Technician Gate
+│       ├── clinical/clinical_modules_hub_screen.dart # Appointments, Doctor Queue, Lab, Radiology, Pharmacy/FIFO, Inpatient, Specialty status
+│       ├── dashboard/executive_dashboard_screen.dart # Facility, edition, entitled modules & operational summary
+│       ├── finance/patient_financial_ledger_screen.dart # Authoritative MariaDB read-back: Account, Invoice, Receipt, Statement, AR, History, Allocations
+│       ├── maintenance/maintenance_center_screen.dart # 14 diagnostic dimensions, PII-redacted report generator, verified local backup trigger
+│       ├── network/network_device_center_screen.dart # LAN/Wi-Fi topology, MariaDB loopback check, 6-char pairing approval & device revocation
+│       ├── patients/patients_workspace_screen.dart # Configuration-driven REQUIRED / OPTIONAL / HIDDEN patient form & directory
+│       ├── reception/shifts_and_visits_screen.dart # Cashier shifts & atomic Decimal visit check-in
+│       └── technician/technician_console_screen.dart # Protected service console (isolated from hospital roles)
+└── test/
+    └── product_layer_desktop_test.dart           # 6 widget & architectural governance tests
+```
+
+### 4.2 Architectural Invariants Enforced (`FACT`)
+1. **Zero Direct MariaDB Access**: `medcore_desktop/pubspec.yaml` contains no SQL/MariaDB driver; all reads and mutations traverse `MedCoreApiClient` over HTTP.
+2. **Zero Second Financial Truth**: `PatientFinancialLedgerScreen` renders exact `DECIMAL(14,4)` string totals computed in `PatientFinancialLedgerService` from `mc_visits`, `mc_financial_events`, `mc_financial_postings`, `mc_visit_item_cost_lines`, `mc_commissions`, and `mc_commission_settlements`, and surfaces explicit `BACKEND_GAP` banners where accounting operations are not yet supported in the backend.
+3. **Dual-Layer Module Entitlement Enforcement**: Disabled modules are filtered out by `DesktopNavigationCatalog.visibleRoutes(...)` / blocked by `MedCoreDesktopShell` AND rejected fail-closed in `LocalMedCoreServer._authorize(...)` with `403 MODULE_NOT_ENTITLED`.
+4. **Centralized Appearance Source**: `BrandingConfig.buildTheme()` + `MedCorePlatinumDesktopApp` `TextScaler.linear(branding.fontScale)` control application title, facility display name, logo badge, edition label, primary seed color, light/dark/system mode, font scale (`0.85..1.30`), and UI density (`COMPACT` / `STANDARD` / `COMFORTABLE`) from a single source.
+5. **Native Win32 Screen Capture Protection (`IMPLEMENTED`)**: Implemented in `medcore_desktop/windows/runner/flutter_window.cpp` using `SetWindowDisplayAffinity(GetHandle(), WDA_EXCLUDEFROMCAPTURE)` with fallback to `WDA_MONITOR`.
+6. **Hardware & Real-Time Client Hardening (`DEFERRED`)**: Physical LAN mTLS certificate pinning (`TLS_CERT_INFRASTRUCTURE_PENDING`), physical thermal POS / ZPL USB printer hardware verification (`HARDWARE_VERIFICATION_PENDING`), Android tablet & iPadOS shells (`Phase 5`), and EV Authenticode signing (`Phase 12`).

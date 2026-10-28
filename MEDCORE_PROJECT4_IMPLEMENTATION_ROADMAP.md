@@ -40,3 +40,22 @@ flowchart LR
 | **Phase 10** | **Technician Service Tool & Encrypted Backups** | Build `medcore-service-tool` (`DOC-12`): Ed25519 challenge-response unlock, `Executive Report` PDF/HTML, `Engineering Bundle` with deterministic `PII Privacy Filter`, and automated encrypted `mc_backup_runs`. | Verification that exported `.mcdiag` bundle contains 0 patient names/phones/national IDs and can restore a corrupted DB cleanly. |
 | **Phase 11** | **WordPress Control Plane & Secure Cloud AI Cell** | Harden WordPress `/mce/v1/license` to issue Ed25519 leases; deploy Cloud AI Gateway (`DOC-13`) with server-side provider keys and PII scrubbing; delete `/medcore-ai/v1/keys`. | Security audit confirming zero provider keys in client/hospital server and graceful offline AI disablement. |
 | **Phase 12** | **Release Hardening & Hospital LAN Pilot** | Flutter AOT obfuscation, EV Authenticode signing, 25-workstation LAN stress testing, installer packaging. | Production readiness sign-off. |
+
+
+---
+
+## 4. Batch 6 Master Product Completion Ledger (`2026-10-28`)
+
+> **Governance Note (`FACT`)**: Statuses below reflect physical implementation and verification on `2026-10-28` across `15` MariaDB migrations `V001`–`V015`, `94` `InnoDB` tables, `104/104` backend tests across 8 suites (`dart test`), and `6/6` Flutter Desktop tests (`flutter test`).
+
+| Roadmap Area | Batch 6 Scope & Feature Domain | Final Status (`2026-10-28`) | Physical Evidence & Verified Scope |
+|---|---|---|---|
+| **Phase 4 (`FIN`)** | Symmetrical Financial Refund Reversal (`FIN-007`) | `IMPLEMENTED` | `ClinicalFinancialRepositories.executeRefundReversalInternal` symmetrically inverts double-entry postings (`DEBIT <-> CREDIT`), links `reversal_of_event_id`, updates `mc_shifts` and `mc_patients`, and verifies `SUM(DEBIT) == SUM(CREDIT)`. |
+| **Phase 4 (`FIN`)** | Standalone `PATIENT_AR` Debt Collection (`FIN-008`) | `IMPLEMENTED` | `ClinicalFinancialRepositories.collectPatientAr` verifies open shift, prevents over-collection, writes double entries (`DEBIT CASH_ON_HAND / CREDIT ACCOUNTS_RECEIVABLE_PATIENT`), updates shift cash and patient balance. |
+| **Phase 5 (`UI`)** | Win32 Screen Capture Protection (`_secure` affinity) | `IMPLEMENTED` | `medcore_desktop/windows/runner/flutter_window.cpp` applies `SetWindowDisplayAffinity(GetHandle(), WDA_EXCLUDEFROMCAPTURE)` with fallback to `WDA_MONITOR`. Android/iPadOS targets remain `DEFERRED`. |
+| **Phase 7 (`CLN`)** | Real-Time Clinical Event Stream (`SSE`) | `IMPLEMENTED` | `ClinicalEventStreamService` exposes `/api/v1/clinical/events/stream` for doctor queue, triage, and panic alerts with tenant isolation. |
+| **Phase 8 (`LIS/RIS`)** | Granular RAD / LAB Orders Permission Split | `IMPLEMENTED` | `GET /api/v1/orders` strictly segregates `lab_Specimens` (LIS) from `radiology_Worklist` (RIS) with zero privilege bleed. |
+| **Phase 9 (`SPECIALTY`)** | Specialty Clinical Modules (Nursing, ICU, Surgery, Dialysis) | `IMPLEMENTED` | `SpecialtyClinicalService` provides full lifecycle endpoints for `mc_nursing_tasks`, `mc_icu_flowsheets`, `mc_icu_sofa_scores`, `mc_surgeries`, and `mc_dialysis_sessions` with module entitlement checks (`403 MODULE_NOT_ENTITLED`). |
+| **Phase 10 (`OPS`)** | Backup Restore Hardening (`verifyBackupArchiveForRestore`) | `IMPLEMENTED` | `BackupEngineService.verifyBackupArchiveForRestore` computes archive SHA-256 and verifies against recorded `mc_backup_runs` with fail-closed mismatch detection. |
+| **Phase 10 (`TECH`)** | Technician Diagnostic Bundle (`.mcdiag` PII-Redacted Export) | `IMPLEMENTED` | `MaintenanceCenterService.exportEngineeringBundle` packages anonymized diagnostics (`[REDACTED_EMAIL]`, `[REDACTED_PHONE]`, `[REDACTED_NATIONAL_ID]`), system telemetry, trial balance, and records session in `mc_maintenance_reports`. |
+| **Phase 18 (`PRN`)** | Native Printing Formatter (ESC/POS & ZPL) | `IMPLEMENTED` | `NativePrintingService` generates 80mm ESC/POS thermal receipts and ZPL barcode labels with honest `HARDWARE_VERIFICATION_PENDING` marker for non-emulated environments. |
