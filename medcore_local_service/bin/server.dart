@@ -26,7 +26,21 @@ Future<void> main(List<String> args) async {
   final applied = await runner.runMigrations();
   stdout.writeln('[MedCore Local Service] Applied/Verified ${applied.length} migrations.');
 
-  final server = LocalMedCoreServer(db);
+  final securityDir = Platform.environment['MEDCORE_SECURITY_DIR'] ?? p.join(Directory.current.path, 'runtime', 'security');
+  final server = LocalMedCoreServer(
+    db,
+    securityRootDirectory: securityDir,
+    autoBootstrapCommissioningSecret: true,
+  );
+  final bootstrap = server.technicianService.ensureCommissioningSecretProvisioned();
+  if (bootstrap['isNewlyGenerated'] == true) {
+    stdout.writeln('================================================================================');
+    stdout.writeln('[MedCore Local Service] FRESH INSTALLATION DETECTED');
+    stdout.writeln('[MedCore Local Service] One-time technician commissioning secret generated.');
+    stdout.writeln('[MedCore Local Service] Secret written to: ${bootstrap['slipFile']}');
+    stdout.writeln('================================================================================');
+  }
+
   final boundPort = await server.start(address: '127.0.0.1', port: port);
   stdout.writeln('[MedCore Local Service] Listening on http://127.0.0.1:$boundPort/api/v1/health');
 }

@@ -69,6 +69,7 @@ class LocalMedCoreServer {
   late final SchedulingResourceRepository schedulingResourceRepo;
   final String? runtimeDirectoryOverride;
   final String? migrationsDirectoryOverride;
+  final bool autoBootstrapCommissioningSecret;
   late final DatabaseLifecycleService databaseLifecycleService;
   HttpServer? _httpServer;
 
@@ -78,6 +79,7 @@ class LocalMedCoreServer {
     this.clockDriftTolerance = const Duration(seconds: 5),
     this.securityRootDirectory,
     this.technicianSecretHashOverride,
+    this.autoBootstrapCommissioningSecret = false,
     this.backupStorageDirectory,
     this.backupEncryptionKeyOverride,
     this.runtimeDirectoryOverride,
@@ -117,6 +119,9 @@ class LocalMedCoreServer {
       maintenanceTokenService: maintenanceTokenService,
       trustedTimeVerifier: trustedTimeVerifier,
     );
+    if (autoBootstrapCommissioningSecret && technicianSecretHashOverride == null) {
+      technicianService.ensureCommissioningSecretProvisioned();
+    }
     maintenanceCenterService = MaintenanceCenterService(
       db,
       facilityConfigService: facilityConfigService,

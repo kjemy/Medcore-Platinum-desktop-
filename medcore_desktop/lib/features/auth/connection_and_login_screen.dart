@@ -280,6 +280,9 @@ class _ConnectionAndLoginScreenState extends State<ConnectionAndLoginScreen> {
                           obscureText: true,
                           decoration: const InputDecoration(
                             labelText: 'Installation Technician Secret',
+                            helperText:
+                                'First install: check runtime/security/FIRST_RUN_COMMISSIONING_SECRET.txt or provision via bin/commission.dart',
+                            helperMaxLines: 2,
                           ),
                         )
                       else ...[

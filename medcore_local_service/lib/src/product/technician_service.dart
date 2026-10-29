@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import '../db/db_client.dart';
 import '../db/transaction_manager.dart';
@@ -253,6 +255,11 @@ class TechnicianService {
           );
         }
         authMethod = 'INSTALLATION_TECH_SECRET';
+        if (_firstRunSecretSlipFile.existsSync()) {
+          try {
+            _firstRunSecretSlipFile.deleteSync();
+          } catch (_) {}
+        }
       } else {
         throw AuthException(
           'MISSING_TECHNICIAN_CREDENTIALS',
@@ -480,6 +487,16 @@ class TechnicianService {
     };
   }
 
+  String _resolveSecurityDir() {
+    if (securityRootDirectory != null && securityRootDirectory!.trim().isNotEmpty) {
+      return securityRootDirectory!.trim();
+    }
+    return p.join(Directory.current.path, 'runtime', 'security');
+  }
+
+  File get _technicianSecretFile => File(p.join(_resolveSecurityDir(), 'technician_secret.json'));
+  File get _firstRunSecretSlipFile => File(p.join(_resolveSecurityDir(), 'FIRST_RUN_COMMISSIONING_SECRET.txt'));
+
   String? _resolveExpectedInstallationSecretHash() {
     if (installationSecretHashOverride != null &&
         installationSecretHashOverride!.trim().isNotEmpty) {
@@ -493,7 +510,90 @@ class TechnicianService {
     if (envPlain != null && envPlain.isNotEmpty) {
       return PasswordHasher.hashPassword(envPlain);
     }
+    // Check local provisioned security file
+    try {
+      final file = _technicianSecretFile;
+      if (file.existsSync()) {
+        final content = file.readAsStringSync().trim();
+        if (content.isNotEmpty) {
+          final decoded = jsonDecode(content);
+          if (decoded is Map && decoded['technicianSecretHash'] != null) {
+            return decoded['technicianSecretHash'].toString().trim();
+          }
+        }
+      }
+    } catch (_) {}
     return null;
+  }
+
+  /// Ensures that a technician installation secret is provisioned.
+  /// If neither env vars nor technician_secret.json exist, this creates a secure,
+  /// high-entropy first-run commissioning secret and writes:
+  /// 1. `technician_secret.json` (PBKDF2 hash ONLY)
+  /// 2. `FIRST_RUN_COMMISSIONING_SECRET.txt` (one-time secret for physical technician)
+  Map<String, dynamic> ensureCommissioningSecretProvisioned({
+    String? explicitSecret,
+    bool forceRotate = false,
+  }) {
+    final existingHash = _resolveExpectedInstallationSecretHash();
+    if (existingHash != null && existingHash.isNotEmpty && !forceRotate) {
+      return {
+        'status': 'ALREADY_PROVISIONED',
+        'secretFile': _technicianSecretFile.path,
+        'isNewlyGenerated': false,
+      };
+    }
+
+    final plainSecret = (explicitSecret != null && explicitSecret.trim().isNotEmpty)
+        ? explicitSecret.trim()
+        : 'TECH-COMM-${PasswordHasher.generateSecureToken(16)}';
+
+    if (plainSecret.length < 12) {
+      throw ArgumentError('Technician commissioning secret must be at least 12 characters.');
+    }
+
+    final hash = PasswordHasher.hashPassword(plainSecret);
+    final secDir = Directory(_resolveSecurityDir());
+    if (!secDir.existsSync()) {
+      secDir.createSync(recursive: true);
+    }
+
+    final nowUtc = clock().toUtc();
+    final jsonPayload = jsonEncode({
+      'technicianSecretHash': hash,
+      'authType': 'LOCAL_INSTALLATION_SECRET',
+      'provisionedAtUtc': nowUtc.toIso8601String(),
+      'isOneTimeBootstrap': explicitSecret == null,
+    });
+    _technicianSecretFile.writeAsStringSync(jsonPayload);
+
+    if (explicitSecret == null) {
+      final slipContent = '''
+================================================================================
+MEDCORE PLATINUM DESKTOP — ONE-TIME FIRST-RUN TECHNICIAN COMMISSIONING SECRET
+================================================================================
+Generated At (UTC)    : ${nowUtc.toIso8601String()}
+Commissioning Secret  : $plainSecret
+
+OPERATIONAL INSTRUCTIONS:
+1. Launch MedCore Desktop on this workstation.
+2. Click "Technician / Service Installation Gate" on the connection screen.
+3. Enter the Commissioning Secret above into the Installation Technician Secret field.
+4. Open the Technician Console to configure the facility and provision the
+   initial Hospital Administrator account.
+5. This physical one-time slip file is automatically consumed upon first successful authentication.
+================================================================================
+''';
+      _firstRunSecretSlipFile.writeAsStringSync(slipContent);
+    }
+
+    return {
+      'status': 'PROVISIONED',
+      'secret': plainSecret,
+      'secretFile': _technicianSecretFile.path,
+      'slipFile': explicitSecret == null ? _firstRunSecretSlipFile.path : null,
+      'isNewlyGenerated': true,
+    };
   }
 
   static String _fmtUtcMillis(DateTime dt) {
