@@ -108,6 +108,20 @@ class DesktopNavigationCatalog {
       anyOfPermissions: ['nurse', 'icu_nicu', 'surgery', 'dialysis', 'CommandCenter'],
     ),
     DesktopRouteEntry(
+      routeId: 'clinical_templates',
+      label: 'Clinical Templates',
+      icon: Icons.description_outlined,
+      requiredModule: 'Doctors',
+      anyOfPermissions: ['doctor', 'clinic', 'doctor_ClinicalWorkspace', 'admin'],
+    ),
+    DesktopRouteEntry(
+      routeId: 'resource_scheduling',
+      label: 'Resource Scheduling',
+      icon: Icons.meeting_room_outlined,
+      requiredModule: 'Appointments',
+      anyOfPermissions: ['appointments', 'reception_Appointments', 'admin'],
+    ),
+    DesktopRouteEntry(
       routeId: 'staff_admin',
       label: 'Staff & Employee Accounts',
       icon: Icons.badge_outlined,

@@ -8,6 +8,8 @@ export 'src/repositories/clock_guard_repository.dart';
 export 'src/repositories/staff_auth_repository.dart';
 export 'src/repositories/clinical_financial_repositories.dart';
 export 'src/repositories/domain_repositories.dart';
+export 'src/repositories/clinical_template_repository.dart';
+export 'src/repositories/scheduling_resource_repository.dart';
 export 'src/security/permissions_catalog.dart';
 export 'src/security/password_hasher.dart';
 export 'src/security/clock_guard_key_manager.dart';

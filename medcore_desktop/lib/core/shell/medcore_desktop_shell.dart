@@ -10,6 +10,8 @@ import '../../features/clinical/clinical_modules_hub_screen.dart';
 import '../../features/network/network_device_center_screen.dart';
 import '../../features/maintenance/maintenance_center_screen.dart';
 import '../../features/staff/admin_employee_management_screen.dart';
+import '../../features/templates/clinical_template_editor_screen.dart';
+import '../../features/scheduling/resource_scheduling_management_screen.dart';
 
 /// Consistent Desktop Layout Shell (`Sidebar + Top Header Bar + Route/Entitlement Guard + Content Pane`).
 class MedCoreDesktopShell extends StatelessWidget {
@@ -321,6 +323,10 @@ class MedCoreDesktopShell extends StatelessWidget {
         return NetworkDeviceCenterScreen(controller: controller);
       case 'maintenance_center':
         return MaintenanceCenterScreen(controller: controller);
+      case 'clinical_templates':
+        return ClinicalTemplateEditorScreen(controller: controller);
+      case 'resource_scheduling':
+        return ResourceSchedulingManagementScreen(controller: controller);
       case 'staff_admin':
         return AdminEmployeeManagementScreen(controller: controller);
       default:

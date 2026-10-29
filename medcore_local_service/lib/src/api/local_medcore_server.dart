@@ -30,6 +30,8 @@ import '../product/native_printing_service.dart';
 import '../product/external_payable_service.dart';
 import '../product/lan_pki_service.dart';
 import '../product/database_lifecycle_service.dart';
+import '../repositories/clinical_template_repository.dart';
+import '../repositories/scheduling_resource_repository.dart';
 
 class LocalMedCoreServer {
   final DbClient db;
@@ -63,6 +65,8 @@ class LocalMedCoreServer {
   late final ExternalPayableService externalPayableService;
   late final LanPkiService lanPkiService;
   late final StaffEvaluationRepository staffEvaluationRepo;
+  late final ClinicalTemplateRepository clinicalTemplateRepo;
+  late final SchedulingResourceRepository schedulingResourceRepo;
   final String? runtimeDirectoryOverride;
   final String? migrationsDirectoryOverride;
   late final DatabaseLifecycleService databaseLifecycleService;
@@ -99,6 +103,8 @@ class LocalMedCoreServer {
     inpatientRepo = InpatientAdmissionRepository(txManager);
     settlementRepo = FinancialSettlementRepository(txManager);
     staffEvaluationRepo = StaffEvaluationRepository(txManager);
+    clinicalTemplateRepo = ClinicalTemplateRepository(db);
+    schedulingResourceRepo = SchedulingResourceRepository(db);
     dualControlRepo = DualControlRepository(txManager);
     facilityConfigService = FacilityConfigService(db);
     technicianService = TechnicianService(
@@ -998,6 +1004,210 @@ class LocalMedCoreServer {
     });
 
     // =========================================================================
+    // MULTI-RESOURCE SCHEDULING & CONFLICT ENGINE (Batch 13 / Master Completion)
+    // =========================================================================
+    router.get('/api/v1/scheduling/resources', (Request req) async {
+      final scope = await _authorize(req, requiredPermission: 'appointments');
+      final params = req.requestedUri.queryParameters;
+      SchedulingResourceType? rType;
+      if (params['resourceType'] != null && params['resourceType']!.isNotEmpty) {
+        rType = SchedulingResourceType.fromString(params['resourceType']!);
+      }
+      final resources = await schedulingResourceRepo.listResources(
+        scope.hospitalCode,
+        resourceType: rType,
+        onlyActive: params['onlyActive'] == 'true',
+      );
+      return _jsonOk({
+        'count': resources.length,
+        'items': resources.map((r) => r.toJson()).toList(),
+      });
+    });
+
+    router.post('/api/v1/scheduling/resources', (Request req) async {
+      final scope = await _authorize(
+        req,
+        requiredPermission: 'appointments',
+        requireCanEdit: true,
+      );
+      final body = await _readJsonBody(req);
+      final rType = SchedulingResourceType.fromString(body['resourceType'].toString());
+      final res = await schedulingResourceRepo.upsertResource(
+        hospitalCode: scope.hospitalCode,
+        resourceCode: body['resourceCode'].toString(),
+        name: body['name'].toString(),
+        resourceType: rType,
+        departmentId: body['departmentId']?.toString(),
+        metadata: body['metadata'] is Map ? Map<String, dynamic>.from(body['metadata'] as Map) : null,
+        isActive: body['isActive'] != false,
+      );
+      return _jsonOk(res.toJson(), statusCode: 201);
+    });
+
+    router.get('/api/v1/scheduling/rules', (Request req) async {
+      final scope = await _authorize(req, requiredPermission: 'appointments');
+      final params = req.requestedUri.queryParameters;
+      final rules = await schedulingResourceRepo.listRules(
+        scope.hospitalCode,
+        onlyActive: params['onlyActive'] == 'true',
+      );
+      return _jsonOk({
+        'count': rules.length,
+        'items': rules.map((r) => r.toJson()).toList(),
+      });
+    });
+
+    router.post('/api/v1/scheduling/rules', (Request req) async {
+      final scope = await _authorize(
+        req,
+        requiredPermission: 'appointments',
+        requireCanEdit: true,
+      );
+      final body = await _readJsonBody(req);
+      final pType = SchedulingResourceType.fromString(body['primaryResourceType'].toString());
+      final coTypes = body['requiredCoResourceTypes'] is List
+          ? (body['requiredCoResourceTypes'] as List).map((e) => e.toString()).toList()
+          : <String>[];
+      final rule = await schedulingResourceRepo.upsertRule(
+        hospitalCode: scope.hospitalCode,
+        ruleCode: body['ruleCode'].toString(),
+        name: body['name'].toString(),
+        appointmentType: body['appointmentType'].toString(),
+        primaryResourceType: pType,
+        requiredCoResourceTypes: coTypes,
+        defaultDurationMinutes: body['defaultDurationMinutes'] is int
+            ? body['defaultDurationMinutes'] as int
+            : int.parse(body['defaultDurationMinutes']?.toString() ?? '30'),
+        bufferBeforeMinutes: body['bufferBeforeMinutes'] is int
+            ? body['bufferBeforeMinutes'] as int
+            : int.parse(body['bufferBeforeMinutes']?.toString() ?? '0'),
+        bufferAfterMinutes: body['bufferAfterMinutes'] is int
+            ? body['bufferAfterMinutes'] as int
+            : int.parse(body['bufferAfterMinutes']?.toString() ?? '0'),
+        isActive: body['isActive'] != false,
+      );
+      return _jsonOk(rule.toJson(), statusCode: 201);
+    });
+
+    router.post('/api/v1/scheduling/conflicts/check', (Request req) async {
+      final scope = await _authorize(req, requiredPermission: 'appointments');
+      final body = await _readJsonBody(req);
+      final rIds = (body['resourceIds'] as List).map((e) => int.parse(e.toString())).toList();
+      final start = DateTime.parse(body['start'].toString()).toUtc();
+      final end = DateTime.parse(body['end'].toString()).toUtc();
+      final excludeAptId = body['excludeAppointmentId'] != null ? int.parse(body['excludeAppointmentId'].toString()) : null;
+
+      final conflicts = await schedulingResourceRepo.checkConflicts(
+        hospitalCode: scope.hospitalCode,
+        resourceIds: rIds,
+        startUtc: start,
+        endUtc: end,
+        excludeAppointmentId: excludeAptId,
+      );
+      return _jsonOk({
+        'hasConflict': conflicts.isNotEmpty,
+        'conflicts': conflicts,
+      });
+    });
+
+    router.post('/api/v1/scheduling/appointments/multi-resource', (Request req) async {
+      final scope = await _authorize(
+        req,
+        requiredPermission: 'appointments',
+        requireCanEdit: true,
+      );
+      final body = await _readJsonBody(req);
+      final aptNumber = body['appointmentNumber'].toString();
+      final patientId = int.parse(body['patientId'].toString());
+      final aptType = body['appointmentType']?.toString() ?? 'CONSULTATION';
+      final doctorId = body['doctorId'] != null ? int.parse(body['doctorId'].toString()) : null;
+      final aptDateTime = DateTime.parse(body['appointmentDateTime'].toString()).toUtc();
+      final notes = body['notes']?.toString();
+      final resourceIds = (body['resourceIds'] as List).map((e) => int.parse(e.toString())).toList();
+
+      // Resolve rule if provided or look up by appointment type
+      SchedulingRuleRecord? rule;
+      if (body['ruleCode'] != null) {
+        rule = await schedulingResourceRepo.getRuleByCode(scope.hospitalCode, body['ruleCode'].toString());
+      }
+      rule ??= await schedulingResourceRepo.getRuleByAppointmentType(scope.hospitalCode, aptType);
+
+      final duration = body['durationMinutes'] != null
+          ? int.parse(body['durationMinutes'].toString())
+          : (rule?.defaultDurationMinutes ?? 30);
+      final bufferBefore = rule?.bufferBeforeMinutes ?? 0;
+      final bufferAfter = rule?.bufferAfterMinutes ?? 0;
+
+      // 1. Create Appointment in atomic transaction
+      final apt = await appointmentRepo.createAppointment(
+        scope: scope,
+        appointmentNumber: aptNumber,
+        patientId: patientId,
+        doctorId: (doctorId ?? scope.actor.id).toString(),
+        appointmentType: aptType,
+        scheduledAt: aptDateTime,
+        durationMinutes: duration,
+        notes: notes,
+      );
+
+      // 2. Allocate resources atomically with conflict check
+      try {
+        final allocations = await schedulingResourceRepo.allocateResourcesTransaction(
+          hospitalCode: scope.hospitalCode,
+          appointmentId: apt.id,
+          resourceIds: resourceIds,
+          requestedStartUtc: aptDateTime,
+          durationMinutes: duration,
+          bufferBeforeMinutes: bufferBefore,
+          bufferAfterMinutes: bufferAfter,
+        );
+
+        return _jsonOk({
+          'appointment': apt.toJson(),
+          'allocations': allocations.map((a) => a.toJson()).toList(),
+          'ruleApplied': rule?.ruleCode,
+          'durationMinutes': duration,
+          'bufferBeforeMinutes': bufferBefore,
+          'bufferAfterMinutes': bufferAfter,
+        }, statusCode: 201);
+      } catch (e) {
+        // Rollback appointment status to CANCELLED if allocation failed
+        await appointmentRepo.updateStatus(
+          scope: scope,
+          appointmentId: apt.id,
+          newStatus: 'CANCELLED',
+          cancellationReason: 'RESOURCE_ALLOCATION_CONFLICT: $e',
+        );
+        rethrow;
+      }
+    });
+
+    router.post('/api/v1/scheduling/appointments/<id>/release', (Request req, String id) async {
+      final scope = await _authorize(
+        req,
+        requiredPermission: 'appointments',
+        requireCanEdit: true,
+      );
+      await schedulingResourceRepo.releaseAllocationsForAppointment(
+        scope.hospitalCode,
+        int.parse(id),
+      );
+      return _jsonOk({'released': true});
+    });
+
+    router.get('/api/v1/scheduling/appointments/<id>/allocations', (Request req, String id) async {
+      final scope = await _authorize(req, requiredPermission: 'appointments');
+      final allocations = await schedulingResourceRepo.listAllocationsForAppointment(
+        scope.hospitalCode,
+        int.parse(id),
+      );
+      return _jsonOk({
+        'count': allocations.length,
+        'items': allocations.map((a) => a.toJson()).toList(),
+      });
+    });
+
+    // =========================================================================
     // WORKSTREAM 2: Shift Reconciliation & Current Shift (FIN-006)
     // =========================================================================
     router.get('/api/v1/shifts/current', (Request req) async {
@@ -1157,6 +1367,171 @@ class LocalMedCoreServer {
         notes: body['notes']?.toString(),
       );
       return _jsonOk(res);
+    });
+
+    // =========================================================================
+    // DYNAMIC CLINICAL TEMPLATE ENGINE (Batch 13 / Master Completion)
+    // =========================================================================
+    router.get('/api/v1/clinical/templates', (Request req) async {
+      final scope = await _authorize(req, requiredPermission: 'doctor_ClinicalWorkspace');
+      final params = req.requestedUri.queryParameters;
+      final templates = await clinicalTemplateRepo.listTemplates(
+        scope.hospitalCode,
+        status: params['status'],
+        specialty: params['specialty'],
+      );
+      return _jsonOk({
+        'count': templates.length,
+        'items': templates.map((t) => t.toJson()).toList(),
+      });
+    });
+
+    router.post('/api/v1/clinical/templates', (Request req) async {
+      final scope = await _authorize(
+        req,
+        requiredPermission: 'doctor_ClinicalWorkspace',
+        requireCanEdit: true,
+      );
+      final body = await _readJsonBody(req);
+      final rawContent = body['content'] ?? body['contentJson'] ?? <String, dynamic>{};
+      final content = rawContent is Map ? Map<String, dynamic>.from(rawContent) : <String, dynamic>{};
+      final template = await clinicalTemplateRepo.createTemplate(
+        hospitalCode: scope.hospitalCode,
+        templateNumber: body['templateNumber'].toString(),
+        title: body['title'].toString(),
+        code: body['code']?.toString(),
+        specialty: body['specialty']?.toString(),
+        category: body['category']?.toString() ?? 'GENERAL',
+        content: content,
+        createdBy: scope.actor.staffCode,
+      );
+      return _jsonOk(template.toJson(), statusCode: 201);
+    });
+
+    router.get('/api/v1/clinical/templates/usages', (Request req) async {
+      final scope = await _authorize(req, requiredPermission: 'doctor_ClinicalWorkspace');
+      final params = req.requestedUri.queryParameters;
+      final usages = await clinicalTemplateRepo.listTemplateUsages(
+        scope.hospitalCode,
+        encounterId: params['encounterId'] != null ? int.parse(params['encounterId']!) : null,
+        patientId: params['patientId'] != null ? int.parse(params['patientId']!) : null,
+      );
+      return _jsonOk({
+        'count': usages.length,
+        'items': usages.map((u) => u.toJson()).toList(),
+      });
+    });
+
+    router.post('/api/v1/clinical/templates/usages', (Request req) async {
+      final scope = await _authorize(
+        req,
+        requiredPermission: 'doctor_ClinicalWorkspace',
+        requireCanEdit: true,
+      );
+      final body = await _readJsonBody(req);
+      final rawSnapshot = body['snapshot'] ?? body['valuesJson'] ?? <String, dynamic>{};
+      final usage = await clinicalTemplateRepo.recordTemplateUsage(
+        hospitalCode: scope.hospitalCode,
+        templateId: int.parse(body['templateId'].toString()),
+        templateVersion: int.parse(body['templateVersion'].toString()),
+        encounterId: body['encounterId'] != null ? int.parse(body['encounterId'].toString()) : null,
+        patientId: body['patientId'] != null ? int.parse(body['patientId'].toString()) : null,
+        snapshot: rawSnapshot is Map ? Map<String, dynamic>.from(rawSnapshot) : const {},
+        usedBy: scope.actor.staffCode,
+      );
+      return _jsonOk(usage.toJson(), statusCode: 201);
+    });
+
+    router.get('/api/v1/clinical/templates/active/<number>', (Request req, String number) async {
+      final scope = await _authorize(req, requiredPermission: 'doctor_ClinicalWorkspace');
+      final template = await clinicalTemplateRepo.getActiveTemplateByNumber(scope.hospitalCode, number);
+      if (template == null) {
+        return _jsonError(404, 'NOT_FOUND', 'Active template for $number not found.');
+      }
+      return _jsonOk(template.toJson());
+    });
+
+    router.get('/api/v1/clinical/templates/<id>', (Request req, String id) async {
+      final scope = await _authorize(req, requiredPermission: 'doctor_ClinicalWorkspace');
+      final parsedId = int.tryParse(id);
+      if (parsedId == null) {
+        return _jsonError(404, 'NOT_FOUND', 'Invalid template id: $id');
+      }
+      final template = await clinicalTemplateRepo.getTemplateById(scope.hospitalCode, parsedId);
+      if (template == null) {
+        return _jsonError(404, 'NOT_FOUND', 'Clinical template $id not found.');
+      }
+      return _jsonOk(template.toJson());
+    });
+
+    router.put('/api/v1/clinical/templates/<id>', (Request req, String id) async {
+      final scope = await _authorize(
+        req,
+        requiredPermission: 'doctor_ClinicalWorkspace',
+        requireCanEdit: true,
+      );
+      final body = await _readJsonBody(req);
+      final rawContent = body['content'] ?? body['contentJson'];
+      final content = rawContent is Map ? Map<String, dynamic>.from(rawContent) : null;
+      final template = await clinicalTemplateRepo.updateTemplateDraft(
+        hospitalCode: scope.hospitalCode,
+        id: int.parse(id),
+        title: body['title']?.toString(),
+        specialty: body['specialty']?.toString(),
+        category: body['category']?.toString(),
+        content: content,
+        updatedBy: scope.actor.staffCode,
+      );
+      return _jsonOk(template.toJson());
+    });
+
+    router.post('/api/v1/clinical/templates/<id>/version', (Request req, String id) async {
+      final scope = await _authorize(
+        req,
+        requiredPermission: 'doctor_ClinicalWorkspace',
+        requireCanEdit: true,
+      );
+      final body = await _readJsonBody(req);
+      final existing = await clinicalTemplateRepo.getTemplateById(scope.hospitalCode, int.parse(id));
+      if (existing == null) {
+        return _jsonError(404, 'NOT_FOUND', 'Clinical template $id not found.');
+      }
+      final rawContent = body['content'] ?? body['contentJson'];
+      final newVer = await clinicalTemplateRepo.createNextVersion(
+        hospitalCode: scope.hospitalCode,
+        templateNumber: existing.templateNumber,
+        newContent: rawContent is Map ? Map<String, dynamic>.from(rawContent) : null,
+        createdBy: scope.actor.staffCode,
+      );
+      return _jsonOk(newVer.toJson(), statusCode: 201);
+    });
+
+    router.post('/api/v1/clinical/templates/<id>/activate', (Request req, String id) async {
+      final scope = await _authorize(
+        req,
+        requiredPermission: 'doctor_ClinicalWorkspace',
+        requireCanEdit: true,
+      );
+      final template = await clinicalTemplateRepo.activateTemplate(
+        hospitalCode: scope.hospitalCode,
+        id: int.parse(id),
+        updatedBy: scope.actor.staffCode,
+      );
+      return _jsonOk(template.toJson());
+    });
+
+    router.post('/api/v1/clinical/templates/<id>/deactivate', (Request req, String id) async {
+      final scope = await _authorize(
+        req,
+        requiredPermission: 'doctor_ClinicalWorkspace',
+        requireCanEdit: true,
+      );
+      final template = await clinicalTemplateRepo.deactivateTemplate(
+        hospitalCode: scope.hospitalCode,
+        id: int.parse(id),
+        updatedBy: scope.actor.staffCode,
+      );
+      return _jsonOk(template.toJson());
     });
 
     // =========================================================================
