@@ -17,7 +17,10 @@ permissions:
 jobs:
   build-windows-release:
     name: Build & Package Windows Release
-    runs-on: windows-latest
+    runs-on: windows-2022
+
+    env:
+      CMAKE_GENERATOR: "Visual Studio 17 2022"
 
     steps:
       - name: Checkout Release Source
