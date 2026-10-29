@@ -97,6 +97,22 @@ jobs:
         working-directory: medcore_desktop
         run: flutter test
 
+      - name: Install Local Service Dependencies
+        working-directory: medcore_local_service
+        run: dart pub get
+
+      - name: Run Local Service Static Analysis
+        working-directory: medcore_local_service
+        run: dart analyze
+
+      - name: Build Local Service Native Binaries
+        working-directory: medcore_local_service
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "build/bin" -Force | Out-Null
+          dart compile exe bin/server.dart -o build/bin/medcore_local_service.exe
+          dart compile exe bin/commission.dart -o build/bin/medcore_commission.exe
+
       - name: Build Windows Release Executable
         working-directory: medcore_desktop
         shell: pwsh
@@ -113,17 +129,29 @@ jobs:
         shell: pwsh
         run: |
           $exePath = "medcore_desktop/build/windows/x64/runner/Release/medcore_desktop.exe"
+          $serviceExePath = "medcore_local_service/build/bin/medcore_local_service.exe"
+          $commExePath = "medcore_local_service/build/bin/medcore_commission.exe"
           if (-not (Test-Path $exePath)) {
             Write-Error "CRITICAL: Release executable not found at $exePath"
             exit 1
           }
+          if (-not (Test-Path $serviceExePath)) {
+            Write-Error "CRITICAL: Local service executable not found at $serviceExePath"
+            exit 1
+          }
+          if (-not (Test-Path $commExePath)) {
+            Write-Error "CRITICAL: Commission CLI executable not found at $commExePath"
+            exit 1
+          }
           $item = Get-Item $exePath
           $exeHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash
+          $serviceHash = (Get-FileHash -Path $serviceExePath -Algorithm SHA256).Hash
           Write-Host "============================================================"
-          Write-Host "COMPILED WINDOWS EXECUTABLE VERIFIED"
-          Write-Host "Path      : $($item.FullName)"
-          Write-Host "Size      : $($item.Length) bytes"
-          Write-Host "SHA-256   : $exeHash"
+          Write-Host "COMPILED WINDOWS BINARIES VERIFIED"
+          Write-Host "Desktop EXE : $($item.FullName)"
+          Write-Host "Desktop Size: $($item.Length) bytes"
+          Write-Host "Desktop SHA : $exeHash"
+          Write-Host "Service SHA : $serviceHash"
           Write-Host "============================================================"
 
       - name: Package Release Bundle & Generate Manifest
@@ -152,17 +180,34 @@ jobs:
             }
           } else {
             if ($buildType -eq "EVALUATION") {
-              $artifactBase = "medcore-platinum-windows-$cleanRef-batch9-eval-$shortSha"
+              $artifactBase = "medcore-platinum-windows-$cleanRef-final-eval-$shortSha"
             } else {
-              $artifactBase = "medcore-platinum-windows-$cleanRef-batch9-$shortSha"
+              $artifactBase = "medcore-platinum-windows-$cleanRef-final-$shortSha"
             }
           }
           
           $stagingDir = "package_staging/$artifactBase"
           New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
           
+          # 1. Desktop Client Binaries & Assets
           Copy-Item -Path "$sourceDir/*" -Destination $stagingDir -Recurse -Force
           
+          # 2. Local Backend Service & Tools
+          $serviceStaging = "$stagingDir/service"
+          New-Item -ItemType Directory -Path "$serviceStaging/sql/migrations" -Force | Out-Null
+          New-Item -ItemType Directory -Path "$serviceStaging/scripts" -Force | Out-Null
+          New-Item -ItemType Directory -Path "$serviceStaging/runtime/security" -Force | Out-Null
+          
+          Copy-Item -Path "medcore_local_service/build/bin/medcore_local_service.exe" -Destination "$serviceStaging/" -Force
+          Copy-Item -Path "medcore_local_service/build/bin/medcore_commission.exe" -Destination "$serviceStaging/" -Force
+          Copy-Item -Path "medcore_local_service/sql/migrations/*" -Destination "$serviceStaging/sql/migrations/" -Force
+          Copy-Item -Path "medcore_local_service/scripts/*" -Destination "$serviceStaging/scripts/" -Force
+          
+          # 3. Packaging Helpers & Documentation
+          Copy-Item -Path "packaging/start_medcore_system.bat" -Destination "$stagingDir/" -Force
+          Copy-Item -Path "packaging/commission_technician.bat" -Destination "$stagingDir/" -Force
+          Copy-Item -Path "packaging/README_INSTALL.txt" -Destination "$stagingDir/" -Force
+
           $zipName = "$artifactBase.zip"
           Compress-Archive -Path "$stagingDir/*" -DestinationPath $zipName -Force
           
@@ -175,6 +220,7 @@ jobs:
             "project" = "MedCore Platinum Desktop"
             "release" = $releaseRef
             "build_type" = $buildType
+            "package_classification" = "B) Desktop + Local Service Self-Contained Distribution Package"
             "screen_capture_mode" = $screenAffinity
             "branding_logo_integrated" = $true
             "application_commit" = $builtCommit
@@ -188,6 +234,18 @@ jobs:
             "artifact_name" = $zipName
             "artifact_size_bytes" = $zipItem.Length
             "artifact_sha256" = $zipHash
+            "distribution_contents" = @(
+              "medcore_desktop.exe (Flutter Desktop Client)",
+              "flutter_windows.dll",
+              "data/ (Flutter Assets)",
+              "service/medcore_local_service.exe (Compiled Standalone Local Service)",
+              "service/medcore_commission.exe (Field Technician CLI)",
+              "service/sql/migrations/ (17 Schema Migrations)",
+              "service/scripts/ (MariaDB & Technician Provisioning Scripts)",
+              "start_medcore_system.bat (One-Click System Launcher)",
+              "commission_technician.bat (Commissioning Shortcut)",
+              "README_INSTALL.txt"
+            )
           }
           
           $manifestJson = $manifest | ConvertTo-Json -Depth 5
