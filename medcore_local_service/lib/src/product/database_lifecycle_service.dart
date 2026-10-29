@@ -14,6 +14,7 @@ import '../explorer/data_explorer_service.dart';
 import '../security/password_hasher.dart';
 import 'backup_engine_foundation.dart';
 import 'facility_config_service.dart';
+import 'technician_service.dart';
 import 'xlsx_exporter.dart';
 
 /// Authoritative Database Lifecycle, Backup, Export, Restore, Factory Reset & Rebuild Engine.
@@ -38,6 +39,7 @@ class DatabaseLifecycleService {
   final String? runtimeDirectoryOverride;
   final String? encryptionKeyOverride;
   final String? securityRootDirectory;
+  final TechnicianService? technicianService;
 
   // Exclusive in-memory lifecycle lock to prevent concurrent reset/restore/backup operations
   bool _lifecycleBusy = false;
@@ -53,6 +55,7 @@ class DatabaseLifecycleService {
     this.runtimeDirectoryOverride,
     this.encryptionKeyOverride,
     this.securityRootDirectory,
+    this.technicianService,
   }) : txManager = TransactionManager(db);
 
   bool get isLifecycleBusy => _lifecycleBusy;
@@ -1188,6 +1191,26 @@ RESTORATION INSTRUCTIONS:
           try {
             f.deleteSync();
           } catch (_) {}
+        }
+      }
+
+      // 6c. Invalidate previous technician credentials and force-generate fresh commissioning secret slip
+      if (technicianService != null) {
+        technicianService!.ensureCommissioningSecretProvisioned(forceRotate: true);
+      } else {
+        for (final d in secDirs) {
+          final tf = File(p.join(d, 'technician_secret.json'));
+          if (tf.existsSync()) {
+            try {
+              tf.deleteSync();
+            } catch (_) {}
+          }
+          final sf = File(p.join(d, 'FIRST_RUN_COMMISSIONING_SECRET.txt'));
+          if (sf.existsSync()) {
+            try {
+              sf.deleteSync();
+            } catch (_) {}
+          }
         }
       }
 

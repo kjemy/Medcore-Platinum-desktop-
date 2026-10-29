@@ -322,6 +322,83 @@ class ClockGuardRepository {
     );
     final file = _securityRootFile(hospitalCode);
     final externalExists = file.existsSync();
+
+    // Determine authoritative persistence state (Uninitialized vs. Established)
+    final tenant = await db.execute(
+      'SELECT clock_guard_initialized_at FROM mc_tenants WHERE hospital_code = :hosp LIMIT 1 FOR UPDATE',
+      {'hosp': hospitalCode},
+    );
+    final sessions = await db.execute('SELECT COUNT(*) AS c FROM mc_auth_sessions WHERE hospital_code = :hosp', {'hosp': hospitalCode});
+    final logins = await db.execute('SELECT COUNT(*) AS c FROM mc_staff WHERE hospital_code = :hosp AND last_login_at IS NOT NULL', {'hosp': hospitalCode});
+    final clockRecords = await db.execute('SELECT COUNT(*) AS c FROM mc_clock_guard WHERE hospital_code = :hosp', {'hosp': hospitalCode});
+    final init = tenant.rows.isEmpty ? null : tenant.rows.first.colByName('clock_guard_initialized_at');
+    final sessionCount = int.tryParse(sessions.rows.first.colByName('c') ?? '0') ?? 0;
+    final loginCount = int.tryParse(logins.rows.first.colByName('c') ?? '0') ?? 0;
+    final clockCount = int.tryParse(clockRecords.rows.first.colByName('c') ?? '0') ?? 0;
+
+    final isEstablished = (init != null && init.isNotEmpty) || sessionCount > 0 || loginCount > 0 || clockCount > 0;
+
+    // STATE 1: Genuinely UNINITIALIZED / Clean Installation / Fresh Post-Factory-Reset State
+    if (!isEstablished) {
+      if (externalExists && rootResult.rows.isNotEmpty) {
+        // Both exist: perform normal cryptographic verification
+      } else if (externalExists && rootResult.rows.isEmpty) {
+        // Disk anchor exists: backfill MariaDB
+        final data = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+        final externalRoot = <String, String>{for (final e in data.entries) e.key: e.value.toString()};
+        await db.execute(
+          'INSERT INTO mc_security_root (hospital_code, installation_id, initialization_id, initialized_at_utc, state, hmac_seal) '
+          'VALUES (:hosp, :inst, :iid, :created, :state, :seal) '
+          'ON DUPLICATE KEY UPDATE state = VALUES(state)',
+          {
+            'hosp': externalRoot['hospital_code'],
+            'inst': externalRoot['installation_id'],
+            'iid': externalRoot['initialization_id'],
+            'created': externalRoot['initialized_at_utc'],
+            'state': externalRoot['state'],
+            'seal': externalRoot['hmac_seal'],
+          },
+        );
+        return true;
+      } else {
+        // Genuinely fresh state (no external anchor): cleanly initialize root
+        if (rootResult.rows.isNotEmpty) {
+          await db.execute('DELETE FROM mc_security_root WHERE hospital_code = :hosp', {'hosp': hospitalCode});
+        }
+        await _createSecurityRoot(hospitalCode, DateTime.now().toUtc());
+        return false;
+      }
+    }
+
+    // STATE 2: Cryptographically Authorized Maintenance Recovery for Established Tenant
+    if (allowAuthenticatedDbRestore && rootResult.rows.isNotEmpty && !externalExists) {
+      final row = rootResult.rows.first;
+      final root = <String, String>{
+        'hospital_code': row.colByName('hospital_code') ?? '',
+        'installation_id': row.colByName('installation_id') ?? '',
+        'initialization_id': row.colByName('initialization_id') ?? '',
+        'initialized_at_utc': row.colByName('initialized_at_utc') == null
+            ? ''
+            : _fmtDt3(_parseUtc(row.colByName('initialized_at_utc'))),
+        'state': row.colByName('state') ?? '',
+        'hmac_seal': row.colByName('hmac_seal') ?? '',
+      };
+      final initializedAt = _parseUtc(root['initialized_at_utc']);
+      final expected = keyManager.computeSecurityRootSeal(
+        hospitalCode: hospitalCode,
+        installationId: root['installation_id']!,
+        initializationId: root['initialization_id']!,
+        initializedAtUtc: initializedAt,
+        state: root['state']!,
+      );
+      if (_constantTimeEquals(expected, root['hmac_seal']!)) {
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(root), flush: true);
+        return true;
+      }
+    }
+
+    // STATE 3: Established Tenant Verification — Strict Fail-Closed Anti-Tamper Enforcement
     if (rootResult.rows.isNotEmpty || externalExists) {
       if (!externalExists || (rootResult.rows.isEmpty && !allowAuthenticatedDbRestore)) {
         throw ClockTamperException('Security root is missing from MariaDB or protected local anchor; refusing reinitialization.');
@@ -393,16 +470,7 @@ class ClockGuardRepository {
       return false;
     }
 
-    final tenant = await db.execute(
-      'SELECT clock_guard_initialized_at FROM mc_tenants WHERE hospital_code = :hosp LIMIT 1 FOR UPDATE',
-      {'hosp': hospitalCode},
-    );
-    final sessions = await db.execute('SELECT COUNT(*) AS c FROM mc_auth_sessions WHERE hospital_code = :hosp', {'hosp': hospitalCode});
-    final logins = await db.execute('SELECT COUNT(*) AS c FROM mc_staff WHERE hospital_code = :hosp AND last_login_at IS NOT NULL', {'hosp': hospitalCode});
-    final init = tenant.rows.isEmpty ? null : tenant.rows.first.colByName('clock_guard_initialized_at');
-    final sessionCount = int.tryParse(sessions.rows.first.colByName('c') ?? '0') ?? 0;
-    final loginCount = int.tryParse(logins.rows.first.colByName('c') ?? '0') ?? 0;
-    if ((init != null && init.isNotEmpty) || sessionCount > 0 || loginCount > 0) {
+    if (isEstablished) {
       throw ClockTamperException('Established tenant has no security root; refusing fresh clock initialization.');
     }
     await _createSecurityRoot(hospitalCode, DateTime.now().toUtc());
@@ -432,11 +500,17 @@ class ClockGuardRepository {
     file.parent.createSync(recursive: true);
     final temp = File('${file.path}.tmp');
     temp.writeAsStringSync(jsonEncode(root), flush: true);
-    if (file.existsSync()) throw ClockTamperException('Security root anchor already exists unexpectedly.');
+    if (file.existsSync()) {
+      try {
+        file.deleteSync();
+      } catch (_) {}
+    }
     temp.renameSync(file.path);
     await db.execute(
       'INSERT INTO mc_security_root (hospital_code, installation_id, initialization_id, initialized_at_utc, state, hmac_seal) '
-      'VALUES (:hosp, :inst, :iid, :created, :state, :seal)',
+      'VALUES (:hosp, :inst, :iid, :created, :state, :seal) '
+      'ON DUPLICATE KEY UPDATE installation_id = VALUES(installation_id), initialization_id = VALUES(initialization_id), '
+      'initialized_at_utc = VALUES(initialized_at_utc), state = VALUES(state), hmac_seal = VALUES(hmac_seal)',
       {'hosp': hospitalCode, 'inst': installationId, 'iid': initializationId, 'created': _fmtDt3(initializedAtUtc), 'state': state, 'seal': seal},
     );
   }

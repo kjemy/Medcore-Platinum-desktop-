@@ -239,13 +239,18 @@ class _ConnectionAndLoginScreenState extends State<ConnectionAndLoginScreen> {
     );
   }
 
-  Future<void> _showProtectedTechnicianGateDialog() async {
+    Future<void> _showProtectedTechnicianGateDialog() async {
     final secretCtrl = TextEditingController();
     final authorityTokenCtrl = TextEditingController();
     final challengeIdCtrl = TextEditingController();
     final timeResponseCtrl = TextEditingController();
+    final recoveryTokenCtrl = TextEditingController();
+    final recoveryTimeRespCtrl = TextEditingController();
     bool useRsaAuthorityToken = false;
+    bool isRecoveryMode = false;
+    Map<String, dynamic>? recoveryChallenge;
     String? gateError;
+    String? recoverySuccessMsg;
 
     await showDialog<void>(
       context: context,
@@ -253,81 +258,239 @@ class _ConnectionAndLoginScreenState extends State<ConnectionAndLoginScreen> {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
             return AlertDialog(
-              title: const Text('Protected Technician / Service Mode Gate'),
+              title: Row(
+                children: [
+                  const Icon(Icons.engineering, size: 22),
+                  const SizedBox(width: 8),
+                  Text(isRecoveryMode
+                      ? 'Technician Cryptographic RSA-2048 Recovery'
+                      : 'Protected Technician / Service Mode Gate'),
+                ],
+              ),
               content: SizedBox(
-                width: 500,
+                width: 520,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Isolated Service Boundary: Ordinary hospital user credentials cannot unlock Technician Mode. Authenticate via installation technician secret or signed RSA-2048 MC_MAINT_V1 authority token.',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      const SizedBox(height: 12),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Use Signed RSA-2048 Authority Token (MC_MAINT_V1)'),
-                        value: useRsaAuthorityToken,
-                        onChanged: (v) => setDialogState(() => useRsaAuthorityToken = v),
-                      ),
-                      const SizedBox(height: 8),
-                      if (!useRsaAuthorityToken)
-                        TextField(
-                          key: const Key('input_tech_secret'),
-                          controller: secretCtrl,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Installation Technician Secret',
-                            helperText:
-                                'First install: check runtime/security/FIRST_RUN_COMMISSIONING_SECRET.txt or provision via bin/commission.dart',
-                            helperMaxLines: 2,
-                          ),
-                        )
-                      else ...[
+                      if (isRecoveryMode) ...[
+                        const Text(
+                          'Zero Universal Passwords Invariant: If local technician credentials are lost, access can only be restored using a cryptographically signed RSA-2048 MC_MAINT_V1 authority token bound to this facility, device, and one-time challenge nonce.',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(height: 14),
                         OutlinedButton.icon(
+                          key: const Key('btn_request_recovery_challenge'),
                           onPressed: () async {
+                            setDialogState(() {
+                              gateError = null;
+                              recoverySuccessMsg = null;
+                            });
                             try {
                               widget.controller.api.configureConnection(
                                 baseUrl: _urlCtrl.text,
                                 hospitalCode: _hospCtrl.text,
                                 deviceId: _deviceCtrl.text,
                               );
-                              final ch = await widget.controller.api.postJson(
-                                '/api/v1/technician/time-challenge',
-                                {'hospitalCode': _hospCtrl.text.trim()},
-                                includeAuth: false,
-                              );
+                              final ch = await widget.controller.createTechnicianRecoveryChallenge();
                               setDialogState(() {
-                                challengeIdCtrl.text = ch['challengeId']?.toString() ?? '';
+                                recoveryChallenge = ch;
                               });
                             } on MedCoreApiException catch (e) {
                               setDialogState(() => gateError = e.toString());
+                            } catch (e) {
+                              setDialogState(() => gateError = e.toString());
                             }
                           },
-                          icon: const Icon(Icons.schedule),
-                          label: const Text('1. Issue Trusted-Time Challenge'),
+                          icon: const Icon(Icons.security),
+                          label: const Text('1. Issue Recovery Challenge'),
                         ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: challengeIdCtrl,
-                          decoration: const InputDecoration(labelText: 'Challenge ID'),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: timeResponseCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Signed Trusted-Time Response (MC_TIME_V1...)',
+                        if (recoveryChallenge != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Theme.of(ctx).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: Theme.of(ctx).colorScheme.outlineVariant),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Challenge ID: ${recoveryChallenge!["challengeId"] ?? ""}',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                                const SizedBox(height: 4),
+                                Text('Facility: ${recoveryChallenge!["hospitalCode"] ?? ""}  |  Device: ${recoveryChallenge!["deviceId"] ?? ""}',
+                                    style: const TextStyle(fontSize: 11)),
+                                const SizedBox(height: 4),
+                                Text('Nonce: ${recoveryChallenge!["nonce"] ?? ""}',
+                                    style: const TextStyle(fontSize: 10, fontFamily: 'monospace')),
+                                const SizedBox(height: 4),
+                                Text('Expires: ${recoveryChallenge!["expiresAtUtc"] ?? ""}',
+                                    style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                              ],
+                            ),
                           ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            key: const Key('input_recovery_time_response'),
+                            controller: recoveryTimeRespCtrl,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'Signed Trusted-Time Response (MC_TIME_V1...)',
+                              hintText: 'Paste signed time response from MedCore Maintenance Center',
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            key: const Key('input_recovery_token'),
+                            controller: recoveryTokenCtrl,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              labelText: 'Signed Authority Recovery Token (MC_MAINT_V1...)',
+                              hintText: 'Paste signed token issued by MedCore Maintenance Center',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            key: const Key('btn_verify_recovery'),
+                            onPressed: () async {
+                              setDialogState(() {
+                                gateError = null;
+                                recoverySuccessMsg = null;
+                              });
+                              try {
+                                final res = await widget.controller.verifyTechnicianRecoveryWithAuthorityToken(
+                                  challengeId: recoveryChallenge!['challengeId']?.toString() ?? '',
+                                  rawRecoveryAuthorityToken: recoveryTokenCtrl.text.trim(),
+                                  rawTrustedTimeResponse: recoveryTimeRespCtrl.text.trim(),
+                                );
+                                final newSec = res['temporaryTechnicianSecret']?.toString() ?? '';
+                                setDialogState(() {
+                                  secretCtrl.text = newSec;
+                                  isRecoveryMode = false;
+                                  recoverySuccessMsg = 'Technician secret successfully recovered and rotated! Temporary secret: $newSec';
+                                });
+                              } on MedCoreApiException catch (e) {
+                                setDialogState(() => gateError = e.toString());
+                              } catch (e) {
+                                setDialogState(() => gateError = e.toString());
+                              }
+                            },
+                            icon: const Icon(Icons.key),
+                            label: const Text('2. Verify Token & Reset Secret'),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: () {
+                            setDialogState(() {
+                              isRecoveryMode = false;
+                              gateError = null;
+                            });
+                          },
+                          child: const Text('Back to Secret Login'),
+                        ),
+                      ] else ...[
+                        const Text(
+                          'Isolated Service Boundary: Ordinary hospital user credentials cannot unlock Technician Mode. Authenticate via installation technician secret or signed RSA-2048 MC_MAINT_V1 authority token.',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        if (recoverySuccessMsg != null) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.green),
+                            ),
+                            child: Text(recoverySuccessMsg!,
+                                style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Use Signed RSA-2048 Authority Token (MC_MAINT_V1)'),
+                          value: useRsaAuthorityToken,
+                          onChanged: (v) => setDialogState(() => useRsaAuthorityToken = v),
                         ),
                         const SizedBox(height: 8),
-                        TextField(
-                          controller: authorityTokenCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Signed Technician Token (MC_MAINT_V1...)',
+                        if (!useRsaAuthorityToken) ...[
+                          TextField(
+                            key: const Key('input_tech_secret'),
+                            controller: secretCtrl,
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Installation Technician Secret',
+                              helperText:
+                                  'First install: check runtime/security/FIRST_RUN_COMMISSIONING_SECRET.txt or provision via bin/commission.dart',
+                              helperMaxLines: 2,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              key: const Key('btn_forgot_tech_secret'),
+                              onPressed: () {
+                                setDialogState(() {
+                                  isRecoveryMode = true;
+                                  gateError = null;
+                                  recoverySuccessMsg = null;
+                                });
+                              },
+                              icon: const Icon(Icons.help_outline, size: 16),
+                              label: const Text('Forgot Secret? Cryptographic RSA Recovery',
+                                  style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ] else ...[
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              try {
+                                widget.controller.api.configureConnection(
+                                  baseUrl: _urlCtrl.text,
+                                  hospitalCode: _hospCtrl.text,
+                                  deviceId: _deviceCtrl.text,
+                                );
+                                final ch = await widget.controller.api.postJson(
+                                  '/api/v1/technician/time-challenge',
+                                  {'hospitalCode': _hospCtrl.text.trim()},
+                                  includeAuth: false,
+                                );
+                                setDialogState(() {
+                                  challengeIdCtrl.text = ch['challengeId']?.toString() ?? '';
+                                });
+                              } on MedCoreApiException catch (e) {
+                                setDialogState(() => gateError = e.toString());
+                              }
+                            },
+                            icon: const Icon(Icons.schedule),
+                            label: const Text('1. Issue Trusted-Time Challenge'),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: challengeIdCtrl,
+                            decoration: const InputDecoration(labelText: 'Challenge ID'),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: timeResponseCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Signed Trusted-Time Response (MC_TIME_V1...)',
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: authorityTokenCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Signed Technician Token (MC_MAINT_V1...)',
+                            ),
+                          ),
+                        ],
                       ],
                       if (gateError != null) ...[
                         const SizedBox(height: 12),
@@ -342,31 +505,34 @@ class _ConnectionAndLoginScreenState extends State<ConnectionAndLoginScreen> {
                   onPressed: () => Navigator.of(ctx).pop(),
                   child: const Text('Cancel'),
                 ),
-                FilledButton.icon(
-                  key: const Key('btn_open_tech_session'),
-                  onPressed: () async {
-                    setDialogState(() => gateError = null);
-                    try {
-                      widget.controller.api.configureConnection(
-                        baseUrl: _urlCtrl.text,
-                        hospitalCode: _hospCtrl.text,
-                        deviceId: _deviceCtrl.text,
-                      );
-                      await widget.controller.openTechnicianSession(
-                        technicianSecret: useRsaAuthorityToken ? null : secretCtrl.text,
-                        authorityToken: useRsaAuthorityToken ? authorityTokenCtrl.text : null,
-                        challengeId: useRsaAuthorityToken ? challengeIdCtrl.text : null,
-                        trustedTimeResponse:
-                            useRsaAuthorityToken ? timeResponseCtrl.text : null,
-                      );
-                      if (ctx.mounted) Navigator.of(ctx).pop();
-                    } on MedCoreApiException catch (e) {
-                      setDialogState(() => gateError = e.toString());
-                    }
-                  },
-                  icon: const Icon(Icons.engineering),
-                  label: const Text('Enter Technician Mode'),
-                ),
+                if (!isRecoveryMode)
+                  FilledButton.icon(
+                    key: const Key('btn_open_tech_session'),
+                    onPressed: () async {
+                      setDialogState(() => gateError = null);
+                      try {
+                        widget.controller.api.configureConnection(
+                          baseUrl: _urlCtrl.text,
+                          hospitalCode: _hospCtrl.text,
+                          deviceId: _deviceCtrl.text,
+                        );
+                        await widget.controller.openTechnicianSession(
+                          technicianSecret: useRsaAuthorityToken ? null : secretCtrl.text,
+                          authorityToken: useRsaAuthorityToken ? authorityTokenCtrl.text : null,
+                          challengeId: useRsaAuthorityToken ? challengeIdCtrl.text : null,
+                          trustedTimeResponse:
+                              useRsaAuthorityToken ? timeResponseCtrl.text : null,
+                        );
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                      } on MedCoreApiException catch (e) {
+                        setDialogState(() => gateError = e.toString());
+                      } catch (e) {
+                        setDialogState(() => gateError = e.toString());
+                      }
+                    },
+                    icon: const Icon(Icons.engineering),
+                    label: const Text('Enter Technician Mode'),
+                  ),
               ],
             );
           },

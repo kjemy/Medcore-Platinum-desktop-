@@ -93,6 +93,16 @@ Future<void> main(List<String> args) async {
   final applied = await runner.runMigrations();
   stdout.writeln('[MedCore Local Service] Applied/Verified ${applied.length} migrations.');
 
+  // Ensure baseline tenant is provisioned if fresh installation
+  final tenantResult = await db.execute('SELECT COUNT(*) as cnt FROM mc_tenants');
+  final tenantCnt = tenantResult.rows.isNotEmpty
+      ? (tenantResult.rows.first.assoc()['cnt'] as num?)?.toInt() ?? 0
+      : 0;
+  if (tenantCnt == 0) {
+    stdout.writeln('[MedCore Local Service] Seeding baseline tenant and device configuration for HOSP_MAIN...');
+    await server.databaseLifecycleService.seedBaselineSystemDataForTesting('HOSP_MAIN');
+  }
+
   final boundPort = await server.start(address: '127.0.0.1', port: port);
   stdout.writeln('[MedCore Local Service] Listening on http://127.0.0.1:$boundPort/api/v1/health');
 }

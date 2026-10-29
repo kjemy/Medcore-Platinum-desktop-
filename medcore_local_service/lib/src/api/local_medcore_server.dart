@@ -167,6 +167,7 @@ class LocalMedCoreServer {
       runtimeDirectoryOverride: runtimeDirectoryOverride,
       encryptionKeyOverride: backupEncryptionKeyOverride,
       securityRootDirectory: securityRootDirectory,
+      technicianService: technicianService,
     );
   }
 
@@ -1904,6 +1905,82 @@ class LocalMedCoreServer {
       final rawTech = req.headers['x-medcore-tech-token'];
       await technicianService.closeSession(rawTech);
       return _jsonOk({'closed': true});
+    });
+
+    // 14.1b Technician Secret Rotation (Technician Session ONLY)
+    router.post('/api/v1/technician/secret/rotate', (Request req) async {
+      final techCtx = await _verifyTechnicianRequest(req);
+      final body = await _readJsonBody(req);
+      final newSecret = body['newSecret']?.toString();
+      final res = await technicianService.rotateTechnicianSecret(
+        hospitalCode: techCtx.hospitalCode,
+        newSecret: newSecret,
+        actorRole: 'TECHNICIAN_SERVICE',
+        deviceId: techCtx.deviceId,
+        ipAddress: req.headers['x-forwarded-for'] ?? '127.0.0.1',
+      );
+      return _jsonOk(res);
+    });
+
+    // 14.1c Cryptographic Technician Credential Recovery Challenge
+    router.post('/api/v1/technician/recovery/challenge', (Request req) async {
+      final body = await _readJsonBody(req);
+      final hospitalCode =
+          (body['hospitalCode'] ?? req.headers['x-tenant-id'] ?? '').toString().trim();
+      final deviceId =
+          (body['deviceId'] ?? req.headers['x-medcore-device-id'] ?? '').toString().trim();
+      if (hospitalCode.isEmpty) {
+        return _jsonError(400, 'MISSING_HOSPITAL_CODE', 'hospitalCode is required.');
+      }
+      final res = await technicianService.createTrustedTimeChallenge(hospitalCode: hospitalCode);
+      final authReq = res['authorityRequest'] as Map<String, dynamic>;
+      return _jsonOk({
+        'challengeId': res['challengeId'],
+        'hospitalCode': hospitalCode,
+        'deviceId': deviceId,
+        'nonce': authReq['nonce'],
+        'installationId': authReq['inst'],
+        'expiresAtUtc': DateTime.now().toUtc().add(const Duration(minutes: 5)).toIso8601String(),
+        'authorityRequest': authReq,
+      });
+    });
+
+    // 14.1d Cryptographic Technician Credential Recovery Execution
+    router.post('/api/v1/technician/recovery/verify', (Request req) async {
+      final body = await _readJsonBody(req);
+      final hospitalCode =
+          (body['hospitalCode'] ?? req.headers['x-tenant-id'] ?? '').toString().trim();
+      final deviceId =
+          (body['deviceId'] ?? req.headers['x-medcore-device-id'] ?? '').toString().trim();
+      final challengeId = (body['challengeId'] ?? '').toString().trim();
+      final trustedTimeResponse =
+          (body['trustedTimeResponse'] ?? body['rawTrustedTimeResponse'] ?? '').toString().trim();
+      final authorityToken =
+          (body['authorityToken'] ?? body['rawRecoveryAuthorityToken'] ?? '').toString().trim();
+      final newSecret = body['newSecret']?.toString();
+
+      if (hospitalCode.isEmpty ||
+          deviceId.isEmpty ||
+          challengeId.isEmpty ||
+          authorityToken.isEmpty ||
+          trustedTimeResponse.isEmpty) {
+        return _jsonError(
+          400,
+          'MISSING_RECOVERY_PARAMS',
+          'hospitalCode, deviceId, challengeId, authorityToken, and trustedTimeResponse are required.',
+        );
+      }
+
+      final res = await technicianService.recoverTechnicianSecretWithAuthorityToken(
+        hospitalCode: hospitalCode,
+        deviceId: deviceId,
+        challengeId: challengeId,
+        rawTrustedTimeResponse: trustedTimeResponse,
+        rawAuthorityToken: authorityToken,
+        newSecret: newSecret,
+        ipAddress: req.headers['x-forwarded-for'] ?? '127.0.0.1',
+      );
+      return _jsonOk(res);
     });
 
     router.get('/api/v1/technician/config', (Request req) async {

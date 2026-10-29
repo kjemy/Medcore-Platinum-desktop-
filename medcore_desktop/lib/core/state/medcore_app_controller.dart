@@ -320,6 +320,86 @@ class MedCoreAppController extends ChangeNotifier {
     }
   }
 
+  /// Creates a device/tenant-bound challenge for cryptographic technician recovery.
+  Future<Map<String, dynamic>> createTechnicianRecoveryChallenge() async {
+    _setBusy(true);
+    _globalErrorBanner = null;
+    try {
+      final res = await api.postJson(
+        '/api/v1/technician/recovery/challenge',
+        {
+          'hospitalCode': api.hospitalCode,
+          'deviceId': api.deviceId,
+        },
+        includeAuth: false,
+      );
+      return Map<String, dynamic>.from(res);
+    } on MedCoreApiException catch (e) {
+      _globalErrorBanner = e.toString();
+      rethrow;
+    } finally {
+      _setBusy(false);
+    }
+  }
+
+  /// Verifies signed RSA-2048 authority recovery tokens and resets technician secret.
+  Future<Map<String, dynamic>> verifyTechnicianRecoveryWithAuthorityToken({
+    required String challengeId,
+    required String rawRecoveryAuthorityToken,
+    required String rawTrustedTimeResponse,
+  }) async {
+    _setBusy(true);
+    _globalErrorBanner = null;
+    try {
+      final res = await api.postJson(
+        '/api/v1/technician/recovery/verify',
+        {
+          'hospitalCode': api.hospitalCode,
+          'deviceId': api.deviceId,
+          'challengeId': challengeId.trim(),
+          'rawRecoveryAuthorityToken': rawRecoveryAuthorityToken.trim(),
+          'rawTrustedTimeResponse': rawTrustedTimeResponse.trim(),
+        },
+        includeAuth: false,
+      );
+      return Map<String, dynamic>.from(res);
+    } on MedCoreApiException catch (e) {
+      _globalErrorBanner = e.toString();
+      rethrow;
+    } finally {
+      _setBusy(false);
+    }
+  }
+
+  /// Rotates the local technician secret within an active authenticated technician session.
+  Future<Map<String, dynamic>> rotateTechnicianSecret({String? newSecret}) async {
+    if (!isTechnicianModeActive) {
+      throw const MedCoreApiException(
+        statusCode: 403,
+        code: 'TECHNICIAN_SESSION_REQUIRED',
+        message: 'Technician session is required to rotate technician secret.',
+      );
+    }
+    _setBusy(true);
+    _globalErrorBanner = null;
+    try {
+      final res = await api.postJson(
+        '/api/v1/technician/secret/rotate',
+        {
+          if (newSecret != null && newSecret.trim().isNotEmpty)
+            'newSecret': newSecret.trim(),
+        },
+        useTechnicianAuth: true,
+      );
+      return Map<String, dynamic>.from(res);
+    } on MedCoreApiException catch (e) {
+      _globalErrorBanner = e.toString();
+      rethrow;
+    } finally {
+      _setBusy(false);
+    }
+  }
+
   /// Changes the authenticated staff member's password and clears forcePasswordChange.
   Future<void> changeStaffPassword({
     required String oldPassword,

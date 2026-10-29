@@ -121,6 +121,10 @@ class _TechnicianConsoleScreenState extends State<TechnicianConsoleScreen>
   final TextEditingController _clockTimeRespCtrl = TextEditingController();
   final TextEditingController _clockMaintTokenCtrl = TextEditingController();
 
+  // Technician Secret Rotation inputs
+  final TextEditingController _newTechSecretCtrl = TextEditingController();
+  String? _rotatedSecretDisplay;
+
   // Tab 8: Initial Hospital Administrator Provisioning & Handover
   final TextEditingController _adminStaffCodeCtrl = TextEditingController(text: 'ADM-001');
   final TextEditingController _adminFullNameCtrl = TextEditingController(text: 'Hospital Director');
@@ -1014,8 +1018,95 @@ class _TechnicianConsoleScreenState extends State<TechnicianConsoleScreen>
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Technician Credential Lifecycle & Secret Rotation',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Rotate the local installation technician secret. The old secret is immediately invalidated, pending first-run slips are consumed, and an immutable audit log is committed.',
+                  style: TextStyle(fontSize: 12),
+                ),
+                if (_rotatedSecretDisplay != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.green),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Secret Rotated Successfully! Save this secret now:',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12)),
+                        const SizedBox(height: 6),
+                        SelectableText(
+                          _rotatedSecretDisplay!,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                TextField(
+                  key: const Key('input_rotate_tech_secret'),
+                  controller: _newTechSecretCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'New Technician Secret (min 12 characters, or leave blank to auto-generate)',
+                    hintText: 'Enter new password or leave blank for secure 32-character token',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  key: const Key('btn_rotate_tech_secret'),
+                  onPressed: _rotateTechnicianSecret,
+                  icon: const Icon(Icons.password, size: 18),
+                  label: const Text('Rotate Installation Secret'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
+  }
+
+  Future<void> _rotateTechnicianSecret() async {
+    final text = _newTechSecretCtrl.text.trim();
+    try {
+      final res = await widget.controller.rotateTechnicianSecret(
+        newSecret: text.isEmpty ? null : text,
+      );
+      if (!mounted) return;
+      setState(() {
+        _rotatedSecretDisplay = res['newSecret']?.toString();
+        _statusMessage = 'Technician secret successfully rotated and audited.';
+        _isError = false;
+        _newTechSecretCtrl.clear();
+      });
+    } on MedCoreApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = e.toString();
+        _isError = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = e.toString();
+        _isError = true;
+      });
+    }
   }
 
   Future<void> _fetchAdminStatus() async {

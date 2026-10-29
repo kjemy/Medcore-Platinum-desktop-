@@ -59,8 +59,9 @@ class DeviceRecord {
 
 class TenantGovernanceRepository {
   final SqlExecutor db;
+  final String? securityRootDirectory;
 
-  TenantGovernanceRepository(this.db);
+  TenantGovernanceRepository(this.db, {this.securityRootDirectory});
 
   Future<void> upsertTenant({
     required String hospitalCode,
@@ -268,7 +269,7 @@ class TenantGovernanceRepository {
   }
 
   Future<ClockGuardRecord?> getClockGuard(String hospitalCode) async {
-    return ClockGuardRepository(db).getClockGuard(hospitalCode);
+    return ClockGuardRepository(db, securityRootDirectory: securityRootDirectory).getClockGuard(hospitalCode);
   }
 
   Future<ClockGuardRecord> unlockClockWithMaintenanceToken({
@@ -277,7 +278,7 @@ class TenantGovernanceRepository {
     required String expectedInstallationId,
     required TrustedTimeEvidence trustedTimeEvidence,
   }) async {
-    return ClockGuardRepository(db).unlockWithMaintenanceToken(
+    return ClockGuardRepository(db, securityRootDirectory: securityRootDirectory).unlockWithMaintenanceToken(
       hospitalCode: hospitalCode,
       rawMaintenanceToken: rawMaintenanceToken,
       expectedInstallationId: expectedInstallationId,

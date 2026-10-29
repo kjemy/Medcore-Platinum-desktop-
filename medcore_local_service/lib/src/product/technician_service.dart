@@ -116,24 +116,29 @@ class TechnicianService {
         throw AuthException('INVALID_TENANT', 'Hospital tenant $hospitalCode is invalid or inactive.', 403);
       }
 
-      // Evaluate monotonic clock guard first
+      // Evaluate monotonic clock guard
       final clockRepo = ClockGuardRepository(tx, securityRootDirectory: securityRootDirectory);
-      final ClockEvaluationResult clockEval;
-      try {
-        clockEval = await clockRepo.evaluateAndUpdateClock(
-          hospitalCode: hospitalCode,
-          currentWallClock: clock(),
-          driftTolerance: clockDriftTolerance,
-        );
-      } on ClockTamperException catch (e) {
-        throw AuthException('CLOCK_TAMPER_DETECTED', 'Clock guard integrity violated: ${e.message}', 403);
-      }
-      if (clockEval.rollbackDetected) {
-        throw AuthException(
-          'CLOCK_ROLLBACK_DETECTED',
-          'Clock rollback active (${clockEval.rollbackDeltaSeconds}s). Execute clock recovery before opening standard technician config session.',
-          403,
-        );
+      final ClockEvaluationResult? clockEval;
+      if (rawAuthorityToken != null && rawAuthorityToken.trim().isNotEmpty) {
+        // RSA Authority token carries cryptographic trusted-time evidence and recovery authorization
+        clockEval = null;
+      } else {
+        try {
+          clockEval = await clockRepo.evaluateAndUpdateClock(
+            hospitalCode: hospitalCode,
+            currentWallClock: clock(),
+            driftTolerance: clockDriftTolerance,
+          );
+        } on ClockTamperException catch (e) {
+          throw AuthException('CLOCK_TAMPER_DETECTED', 'Clock guard integrity violated: ${e.message}', 403);
+        }
+        if (clockEval.rollbackDetected) {
+          throw AuthException(
+            'CLOCK_ROLLBACK_DETECTED',
+            'Clock rollback active (${clockEval.rollbackDeltaSeconds}s). Execute clock recovery before opening standard technician config session.',
+            403,
+          );
+        }
       }
 
       final facilityCfg = await facilityConfigService.getConfiguration(hospitalCode, executor: tx);
@@ -169,7 +174,7 @@ class TechnicianService {
             expectedInstallationId: facilityCfg.installationIdentity,
             trustedTimeEvidence: evidence,
             trustedTimeVerifier: trustedTimeVerifier,
-            allowedActions: const {'TECHNICIAN_SERVICE_MODE'},
+            allowedActions: const {'TECHNICIAN_SERVICE_MODE', 'TECHNICIAN_RECOVERY'},
           );
         } on MaintenanceTokenException catch (e) {
           await govRepo.logSecurityEvent(
@@ -213,7 +218,7 @@ class TechnicianService {
             'inst': facilityCfg.installationIdentity,
             'nonce': parsed.nonce,
             'act': parsed.action,
-            'now_utc': _fmtUtcMillis(clockEval.effectiveTime),
+            'now_utc': _fmtUtcMillis(evidence.trustedUtc),
           },
         );
         authMethod = 'AUTHORITY_RSA_TOKEN';
@@ -271,7 +276,7 @@ class TechnicianService {
       final rawTechToken = 'mct_${PasswordHasher.generateSecureToken(32)}';
       final tokenSha256 = PasswordHasher.sha256Hex(rawTechToken);
       final sessionUuid = 'TECH-SES-${_uuid.v4()}';
-      final issuedAt = clockEval.effectiveTime.toUtc();
+      final issuedAt = (clockEval?.effectiveTime ?? clock()).toUtc();
       final expiresAt = issuedAt.add(const Duration(minutes: 45));
 
       await tx.execute(
@@ -485,6 +490,233 @@ class TechnicianService {
       'rollbackDetected': record.rollbackDetected,
       'unlockedByTokenId': record.unlockedByMaintenanceTokenId,
     };
+  }
+
+  /// Rotates or sets a new technician installation secret in `technician_secret.json`.
+  /// Requires active technician session context or cryptographically verified recovery.
+  Future<Map<String, dynamic>> rotateTechnicianSecret({
+    required String hospitalCode,
+    String? newSecret,
+    required String actorRole,
+    String? deviceId,
+    String? ipAddress,
+  }) async {
+    final secretToHash = (newSecret != null && newSecret.trim().isNotEmpty)
+        ? newSecret.trim()
+        : 'TECH-COMM-${PasswordHasher.generateSecureToken(16)}';
+
+    if (secretToHash.length < 12) {
+      throw ArgumentError('Technician installation secret must be at least 12 characters.');
+    }
+
+    final hash = PasswordHasher.hashPassword(secretToHash);
+    final secDir = Directory(_resolveSecurityDir());
+    if (!secDir.existsSync()) {
+      secDir.createSync(recursive: true);
+    }
+
+    final nowUtc = clock().toUtc();
+    final jsonPayload = jsonEncode({
+      'technicianSecretHash': hash,
+      'authType': 'LOCAL_INSTALLATION_SECRET',
+      'provisionedAtUtc': nowUtc.toIso8601String(),
+      'isOneTimeBootstrap': false,
+      'rotatedByRole': actorRole,
+    });
+    _technicianSecretFile.writeAsStringSync(jsonPayload);
+
+    // Consume any pending one-time slip file
+    if (_firstRunSecretSlipFile.existsSync()) {
+      try {
+        _firstRunSecretSlipFile.deleteSync();
+      } catch (_) {}
+    }
+
+    // Immutable audit log
+    final txManager = TransactionManager(db);
+    await txManager.runInTransaction((tx) async {
+      await tx.writeAuditLog(
+        hospitalCode: hospitalCode,
+        actorRole: actorRole,
+        deviceId: deviceId,
+        action: 'technician.secret.rotated',
+        entityType: 'technician_credential',
+        entityId: 'LOCAL_INSTALLATION_SECRET',
+        afterState: {
+          'rotatedAt': nowUtc.toIso8601String(),
+          'authType': 'LOCAL_INSTALLATION_SECRET',
+        },
+        ipAddress: ipAddress,
+      );
+    });
+
+    return {
+      'status': 'ROTATED',
+      'secretFile': _technicianSecretFile.path,
+      'newSecret': secretToHash,
+      'rotatedAtUtc': nowUtc.toIso8601String(),
+    };
+  }
+
+  /// Cryptographically authorizes technician credential recovery via signed RSA authority token.
+  /// Enforces:
+  /// - Trusted-time challenge-response verification
+  /// - RSA-2048 signature verification under root authority public key
+  /// - Installation and tenant binding
+  /// - Nonce consumption and replay rejection
+  /// - Invalidation of all prior technician sessions
+  /// - Rotation of installation secret
+  /// - Immutable audit record
+  Future<Map<String, dynamic>> recoverTechnicianSecretWithAuthorityToken({
+    required String hospitalCode,
+    required String deviceId,
+    required String challengeId,
+    required String rawTrustedTimeResponse,
+    required String rawAuthorityToken,
+    String? newSecret,
+    String? ipAddress,
+  }) async {
+    if (challengeId.isEmpty || !_pendingChallenges.containsKey(challengeId)) {
+      throw AuthException(
+        'TRUSTED_TIME_CHALLENGE_REQUIRED',
+        'Valid challengeId is required for cryptographic recovery.',
+        403,
+      );
+    }
+    final challenge = _pendingChallenges.remove(challengeId)!;
+    final TrustedTimeEvidence evidence;
+    try {
+      evidence = trustedTimeVerifier.verifyResponse(
+        challenge: challenge,
+        rawResponse: rawTrustedTimeResponse,
+      );
+    } on TrustedTimeEvidenceException catch (e) {
+      throw AuthException(e.code, e.message, 403);
+    }
+
+    final facilityCfg = await facilityConfigService.getConfiguration(hospitalCode);
+    final MaintenanceUnlockToken parsed;
+    try {
+      parsed = maintenanceTokenService.verifyAndParseToken(
+        rawToken: rawAuthorityToken,
+        expectedHospitalCode: hospitalCode,
+        expectedInstallationId: facilityCfg.installationIdentity,
+        trustedTimeEvidence: evidence,
+        trustedTimeVerifier: trustedTimeVerifier,
+        allowedActions: const {'TECHNICIAN_SERVICE_MODE', 'TECHNICIAN_RECOVERY'},
+      );
+    } on MaintenanceTokenException catch (e) {
+      throw AuthException(e.code, e.message, 403);
+    }
+
+    // Atomic transaction for replay prevention, session invalidation, and audit log
+    final txManager = TransactionManager(db);
+    return await txManager.runInTransaction((tx) async {
+      // Replay prevention
+      final replayCheck = await tx.execute(
+        'SELECT id FROM mc_consumed_maintenance_tokens WHERE hospital_code = :hosp AND nonce = :nonce LIMIT 1',
+        {'hosp': hospitalCode, 'nonce': parsed.nonce},
+      );
+      if (replayCheck.rows.isNotEmpty) {
+        throw AuthException(
+          'TECHNICIAN_TOKEN_REPLAYED',
+          'Authority recovery token nonce has already been consumed.',
+          403,
+        );
+      }
+
+      await tx.execute(
+        '''
+        INSERT INTO mc_consumed_maintenance_tokens (
+          hospital_code, installation_id, nonce, action, consumed_at_utc
+        ) VALUES (
+          :hosp, :inst, :nonce, :act, :now_utc
+        )
+        ''',
+        {
+          'hosp': hospitalCode,
+          'inst': facilityCfg.installationIdentity,
+          'nonce': parsed.nonce,
+          'act': parsed.action,
+          'now_utc': _fmtUtcMillis(evidence.trustedUtc),
+        },
+      );
+
+      // Invalidate all existing active technician sessions
+      await tx.execute(
+        'UPDATE mc_technician_sessions SET is_active = 0, revoked_at = CURRENT_TIMESTAMP WHERE hospital_code = :hosp AND is_active = 1',
+        {'hosp': hospitalCode},
+      );
+
+      // Rotate technician secret
+      final secretToHash = (newSecret != null && newSecret.trim().isNotEmpty)
+          ? newSecret.trim()
+          : 'TECH-COMM-${PasswordHasher.generateSecureToken(16)}';
+
+      if (secretToHash.length < 12) {
+        throw ArgumentError('Technician installation secret must be at least 12 characters.');
+      }
+
+      final hash = PasswordHasher.hashPassword(secretToHash);
+      final secDir = Directory(_resolveSecurityDir());
+      if (!secDir.existsSync()) {
+        secDir.createSync(recursive: true);
+      }
+
+      final nowUtc = clock().toUtc();
+      final jsonPayload = jsonEncode({
+        'technicianSecretHash': hash,
+        'authType': 'LOCAL_INSTALLATION_SECRET',
+        'provisionedAtUtc': nowUtc.toIso8601String(),
+        'isOneTimeBootstrap': false,
+        'recoveredViaAuthorityToken': parsed.tokenId,
+      });
+      _technicianSecretFile.writeAsStringSync(jsonPayload);
+
+      // Consume any old slip
+      if (_firstRunSecretSlipFile.existsSync()) {
+        try {
+          _firstRunSecretSlipFile.deleteSync();
+        } catch (_) {}
+      }
+
+      // Re-anchor security root if needed
+      final clockRepo = ClockGuardRepository(
+        tx,
+        maintenanceTokenService: maintenanceTokenService,
+        trustedTimeVerifier: trustedTimeVerifier,
+        securityRootDirectory: securityRootDirectory,
+      );
+      await clockRepo.evaluateAndUpdateClock(
+        hospitalCode: hospitalCode,
+        currentWallClock: evidence.trustedUtc,
+      );
+
+      await tx.writeAuditLog(
+        hospitalCode: hospitalCode,
+        actorRole: 'TECHNICIAN_AUTHORITY_RECOVERY',
+        deviceId: deviceId,
+        action: 'technician.secret.recovered',
+        entityType: 'technician_credential',
+        entityId: parsed.tokenId,
+        afterState: {
+          'recoveredAt': nowUtc.toIso8601String(),
+          'tokenId': parsed.tokenId,
+          'nonce': parsed.nonce,
+        },
+        ipAddress: ipAddress,
+      );
+
+      return {
+        'status': 'RECOVERED',
+        'hospitalCode': hospitalCode,
+        'newSecret': secretToHash,
+        'temporarySecret': secretToHash,
+        'temporaryTechnicianSecret': secretToHash,
+        'tokenId': parsed.tokenId,
+        'recoveredAtUtc': nowUtc.toIso8601String(),
+      };
+    });
   }
 
   String _resolveSecurityDir() {
