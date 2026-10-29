@@ -55,8 +55,12 @@ Future<void> main(List<String> args) async {
   final dbHost = Platform.environment['MEDCORE_DB_HOST'] ?? '127.0.0.1';
   final dbPort = int.tryParse(Platform.environment['MEDCORE_DB_PORT'] ?? '3307') ?? 3307;
   final dbName = Platform.environment['MEDCORE_DB_NAME'] ?? 'medcore_local';
-  final dbUser = _requiredEnvironment('MEDCORE_DB_USER');
-  final dbPassword = _requiredEnvironment('MEDCORE_DB_PASSWORD');
+  final dbUser = Platform.environment['MEDCORE_DB_USER']?.trim().isNotEmpty == true
+      ? Platform.environment['MEDCORE_DB_USER']!.trim()
+      : 'root';
+  final dbPassword = Platform.environment['MEDCORE_DB_PASSWORD']?.trim().isNotEmpty == true
+      ? Platform.environment['MEDCORE_DB_PASSWORD']!.trim()
+      : 'MedCoreLocalDb#2026';
 
   final config = DbConfig(
     host: dbHost,
@@ -69,10 +73,6 @@ Future<void> main(List<String> args) async {
   final db = DbClient(config);
   final migrationsDir = _resolveMigrationsDir();
   final runner = MigrationRunner(db: db, migrationsDir: migrationsDir);
-
-  stdout.writeln('[MedCore Local Service] Applying migrations from $migrationsDir to $dbName...');
-  final applied = await runner.runMigrations();
-  stdout.writeln('[MedCore Local Service] Applied/Verified ${applied.length} migrations.');
 
   final securityDir = _resolveSecurityDir();
   final server = LocalMedCoreServer(
@@ -89,14 +89,12 @@ Future<void> main(List<String> args) async {
     stdout.writeln('================================================================================');
   }
 
+  stdout.writeln('[MedCore Local Service] Applying migrations from $migrationsDir to $dbName...');
+  final applied = await runner.runMigrations();
+  stdout.writeln('[MedCore Local Service] Applied/Verified ${applied.length} migrations.');
+
   final boundPort = await server.start(address: '127.0.0.1', port: port);
   stdout.writeln('[MedCore Local Service] Listening on http://127.0.0.1:$boundPort/api/v1/health');
 }
 
-String _requiredEnvironment(String name) {
-  final value = Platform.environment[name]?.trim();
-  if (value == null || value.isEmpty) {
-    throw StateError('Required environment variable $name is not configured.');
-  }
-  return value;
-}
+
