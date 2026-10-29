@@ -208,6 +208,18 @@ jobs:
           Copy-Item -Path "packaging/commission_technician.bat" -Destination "$stagingDir/" -Force
           Copy-Item -Path "packaging/README_INSTALL.txt" -Destination "$stagingDir/" -Force
 
+          $pkgManifest = [ordered]@{
+            "project" = "MedCore Platinum Desktop"
+            "release" = $releaseRef
+            "build_type" = $buildType
+            "application_commit" = $builtCommit
+            "rc3_base_commit" = "713a8a4578cb7f82258b57497afa800346280534"
+            "workflow_run_id" = $runId
+            "workflow_run_number" = $runNumber
+            "build_timestamp" = $timestamp
+          }
+          $pkgManifest | ConvertTo-Json -Depth 5 | Out-File -FilePath "$stagingDir/release_manifest.json" -Encoding utf8
+
           $zipName = "$artifactBase.zip"
           Compress-Archive -Path "$stagingDir/*" -DestinationPath $zipName -Force
           

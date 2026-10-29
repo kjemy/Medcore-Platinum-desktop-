@@ -17,8 +17,10 @@ if %ERRORLEVEL% EQU 0 (
     echo Local MedCore Service is already running on port 8443.
 ) else (
     echo Starting Local MedCore Service daemon...
-    start "MedCore Local Service" /B "service\medcore_local_service.exe"
-    timeout /t 2 /nobreak >nul
+    pushd "%~dp0service"
+    start "MedCore Local Service" /B "medcore_local_service.exe"
+    popd
+    ping 127.0.0.1 -n 3 >nul
 )
 
 echo Launching MedCore Desktop Client...

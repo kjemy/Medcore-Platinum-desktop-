@@ -2,6 +2,24 @@ import 'dart:io';
 import 'package:medcore_local_service/medcore_local_service.dart';
 import 'package:path/path.dart' as p;
 
+String _resolveSecurityDir() {
+  final envCustom = Platform.environment['MEDCORE_SECURITY_DIR']?.trim();
+  if (envCustom != null && envCustom.isNotEmpty) {
+    return envCustom;
+  }
+
+  final exeDir = p.dirname(Platform.resolvedExecutable);
+  if (Directory(p.join(exeDir, 'sql', 'migrations')).existsSync()) {
+    return p.join(exeDir, 'runtime', 'security');
+  }
+
+  if (Directory(p.join(Directory.current.path, 'service', 'sql', 'migrations')).existsSync()) {
+    return p.join(Directory.current.path, 'service', 'runtime', 'security');
+  }
+
+  return p.join(Directory.current.path, 'runtime', 'security');
+}
+
 Future<void> main(List<String> args) async {
   final command = args.isNotEmpty ? args[0].toLowerCase().trim() : 'help';
   final dbHost = Platform.environment['MEDCORE_DB_HOST'] ?? '127.0.0.1';
@@ -9,8 +27,7 @@ Future<void> main(List<String> args) async {
   final dbName = Platform.environment['MEDCORE_DB_NAME'] ?? 'medcore_local';
   final dbUser = Platform.environment['MEDCORE_DB_USER'] ?? 'root';
   final dbPassword = Platform.environment['MEDCORE_DB_PASSWORD'] ?? 'MedCoreLocalDb#2026';
-  final securityDir = Platform.environment['MEDCORE_SECURITY_DIR'] ??
-      p.join(Directory.current.path, 'runtime', 'security');
+  final securityDir = _resolveSecurityDir();
 
   final config = DbConfig(
     host: dbHost,

@@ -491,6 +491,17 @@ class TechnicianService {
     if (securityRootDirectory != null && securityRootDirectory!.trim().isNotEmpty) {
       return securityRootDirectory!.trim();
     }
+    final envCustom = Platform.environment['MEDCORE_SECURITY_DIR']?.trim();
+    if (envCustom != null && envCustom.isNotEmpty) {
+      return envCustom;
+    }
+    final exeDir = p.dirname(Platform.resolvedExecutable);
+    if (Directory(p.join(exeDir, 'sql', 'migrations')).existsSync()) {
+      return p.join(exeDir, 'runtime', 'security');
+    }
+    if (Directory(p.join(Directory.current.path, 'service', 'sql', 'migrations')).existsSync()) {
+      return p.join(Directory.current.path, 'service', 'runtime', 'security');
+    }
     return p.join(Directory.current.path, 'runtime', 'security');
   }
 

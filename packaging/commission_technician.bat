@@ -1,9 +1,11 @@
 @echo off
 setlocal
 cd /d "%~dp0"
+pushd "%~dp0service"
 if "%~1"=="" (
-    "service\medcore_commission.exe" status
+    "medcore_commission.exe" status
 ) else (
-    "service\medcore_commission.exe" %*
+    "medcore_commission.exe" %*
 )
+popd
 pause

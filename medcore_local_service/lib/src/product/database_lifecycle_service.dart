@@ -1402,7 +1402,13 @@ RESTORATION INSTRUCTIONS:
     if (runtimeDirectoryOverride != null && runtimeDirectoryOverride!.isNotEmpty) {
       return runtimeDirectoryOverride!;
     }
-    // Check if runtime directory exists next to working tree
+    final exeDir = p.dirname(Platform.resolvedExecutable);
+    if (Directory(p.join(exeDir, 'sql', 'migrations')).existsSync()) {
+      return p.join(exeDir, 'runtime');
+    }
+    if (Directory(p.join(Directory.current.path, 'service', 'sql', 'migrations')).existsSync()) {
+      return p.join(Directory.current.path, 'service', 'runtime');
+    }
     final localRuntime = Directory('runtime');
     if (localRuntime.existsSync()) {
       return localRuntime.absolute.path;
