@@ -684,6 +684,103 @@ void main() {
         body: jsonEncode({'doctorId': docF.id, 'settleAmount': '1.0000', 'shiftId': shiftId}),
       );
       expect(req3.statusCode, isNot(equals(201)), reason: 'Zero balance remaining must fail closed');
+    });test('Vector 31: Dynamic Currency Resolution Reified in MariaDB mc_financial_settlements (GAP-017)', () async {
+      final staffRepo = StaffIdentityRepository(db);
+      final docV31 = await staffRepo.createStaff(
+        hospitalCode: 'HOSP_RED_A',
+        staffCode: 'DOC-V31-${DateTime.now().microsecondsSinceEpoch}',
+        fullName: 'Dr. Vector Currency',
+        email: 'v31_${DateTime.now().microsecondsSinceEpoch}@hospa.com',
+        phone: '0100000031',
+        role: MedCoreRole.Doctor,
+        passwordHash: 'hash',
+        permissionsMode: 'custom',
+        customPermissions: {},
+        operationalFlags: const OperationalFlags(
+          canEdit: true,
+          canDelete: false,
+          canCollectMoney: false,
+          canMakeRefunds: false,
+          refundPolicy: RefundPolicy.none,
+        ),
+      );
+
+      final shiftRes = await db.execute('''
+        SELECT id FROM mc_shifts WHERE hospital_code = 'HOSP_RED_A' AND status = 'OPEN' LIMIT 1
+      ''');
+      final shiftId = int.parse(shiftRes.rows.first.colByName('id')!);
+
+      final evRes = await db.execute('''
+        INSERT INTO mc_financial_events (
+          event_uuid, hospital_code, idempotency_key, event_type,
+          source_module, source_entity_type, source_entity_id, shift_id,
+          gross_amount, discount_amount, net_amount, paid_amount,
+          insurance_covered_amount, patient_responsibility_amount, balance_amount,
+          status, created_by
+        ) VALUES (
+          'EV-V31-${DateTime.now().microsecondsSinceEpoch}', 'HOSP_RED_A', 'IDEMP-V31-${DateTime.now().microsecondsSinceEpoch}', 'CONSULTATION_COMMISSION',
+          'CLINICAL', 'VISIT', 555, $shiftId,
+          '200.0000', '0.0000', '200.0000', '0.0000',
+          '0.0000', '0.0000', '0.0000',
+          'POSTED', ${docV31.id}
+        )
+      ''');
+      final evId = evRes.lastInsertID.toInt();
+
+      await db.execute('''
+        INSERT INTO mc_financial_postings (
+          posting_uuid, hospital_code, event_id, posting_type, account_bucket,
+          direction, amount, beneficiary_type, beneficiary_id, shift_id, status, created_at
+        ) VALUES (
+          'POST-V31-ACCRUAL-${DateTime.now().microsecondsSinceEpoch}', 'HOSP_RED_A', :evId, 'COMMISSION_ACCRUAL', 'EXPENSE_DOCTOR_COMMISSION',
+          'DEBIT', 200.0000, 'DOCTOR', :docId, :shiftId, 'POSTED', NOW()
+        )
+      ''', {'evId': evId, 'docId': docV31.id, 'shiftId': shiftId});
+
+      // 2. Settlement request with explicit custom currency USD
+      final reqUSD = await http.post(
+        Uri.parse('$baseUrl/api/v1/finance/settlements/request'),
+        headers: authHeaders('HOSP_RED_A:CSH01', 'DEV-RED-CSH01'),
+        body: jsonEncode({
+          'doctorId': docV31.id,
+          'settleAmount': '50.0000',
+          'shiftId': shiftId,
+          'currency': 'USD',
+        }),
+      );
+      expect(reqUSD.statusCode, equals(201));
+      final usdData = jsonDecode(reqUSD.body)['data'];
+      expect(usdData['currency'], equals('USD'));
+      final usdSetId = usdData['settlementId'];
+
+      // Physical MariaDB check for USD
+      final usdRow = await db.execute(
+        'SELECT currency FROM mc_financial_settlements WHERE id = :id',
+        {'id': usdSetId},
+      );
+      expect(usdRow.rows.first.colByName('currency'), equals('USD'));
+
+      // 3. Settlement request with default tenant currency (omitted currency parameter)
+      final reqDef = await http.post(
+        Uri.parse('$baseUrl/api/v1/finance/settlements/request'),
+        headers: authHeaders('HOSP_RED_A:CSH01', 'DEV-RED-CSH01'),
+        body: jsonEncode({
+          'doctorId': docV31.id,
+          'settleAmount': '50.0000',
+          'shiftId': shiftId,
+        }),
+      );
+      expect(reqDef.statusCode, equals(201));
+      final defData = jsonDecode(reqDef.body)['data'];
+      expect(defData['currency'], equals('EGP'), reason: 'Defaults to tenant default_currency');
+      final defSetId = defData['settlementId'];
+
+      // Physical MariaDB check for default currency
+      final defRow = await db.execute(
+        'SELECT currency FROM mc_financial_settlements WHERE id = :id',
+        {'id': defSetId},
+      );
+      expect(defRow.rows.first.colByName('currency'), equals('EGP'));
     });
   });
 }

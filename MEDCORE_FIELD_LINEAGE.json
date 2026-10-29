@@ -1,0 +1,188 @@
+{
+  "entities": [
+    {
+      "entity": "mc_patients",
+      "fields": [
+        {
+          "field": "mrn",
+          "ui_input": "PatientForm.mrnField (Auto-generated / Read-only)",
+          "api_payload": "POST /api/v1/patients { mrn }",
+          "validation": "Alphanumeric, Tenant-unique regex, non-empty",
+          "repo_layer": "PatientRepository.createPatient",
+          "db_column": "mc_patients.mrn (VARCHAR 64)",
+          "persistence": "InnoDB Physical Commit, UNIQUE Index (hospital_code, mrn)",
+          "read_back": "Verified via SELECT mrn FROM mc_patients WHERE mrn = :mrn",
+          "rehydration": "PatientStateNotifier -> PatientCardWidget"
+        },
+        {
+          "field": "full_name",
+          "ui_input": "PatientForm.nameField (TextFormField)",
+          "api_payload": "POST /api/v1/patients { fullName }",
+          "validation": "Min length 3, UTF-8 clean, trimmed",
+          "repo_layer": "PatientRepository.createPatient",
+          "db_column": "mc_patients.full_name (VARCHAR 191)",
+          "persistence": "InnoDB Physical Commit, utf8mb4_unicode_ci",
+          "read_back": "Verified via SELECT full_name FROM mc_patients",
+          "rehydration": "PatientSummaryBanner"
+        },
+        {
+          "field": "national_id",
+          "ui_input": "PatientForm.nationalIdField (Conditional Dynamic)",
+          "api_payload": "POST /api/v1/patients { nationalId }",
+          "validation": "Enforced if facility config REQUIRED; omitted if HIDDEN",
+          "repo_layer": "PatientRepository.createPatient",
+          "db_column": "mc_patients.national_id (VARCHAR 64)",
+          "persistence": "InnoDB Physical Commit",
+          "read_back": "Verified via SELECT national_id FROM mc_patients",
+          "rehydration": "PatientProfileTab"
+        }
+      ]
+    },
+    {
+      "entity": "mc_encounters",
+      "fields": [
+        {
+          "field": "subjective",
+          "ui_input": "SoapEditor.subjectiveInput (TextFormField)",
+          "api_payload": "POST /api/v1/clinical/encounters { subjective }",
+          "validation": "Clinical note text, non-null",
+          "repo_layer": "ClinicalEncounterRepository.createEncounter",
+          "db_column": "mc_encounters.subjective (TEXT)",
+          "persistence": "InnoDB Physical Commit",
+          "read_back": "Verified via SELECT subjective FROM mc_encounters",
+          "rehydration": "SoapHistoryTimeline"
+        },
+        {
+          "field": "assessment",
+          "ui_input": "SoapEditor.assessmentInput + DiagnosisSearch",
+          "api_payload": "POST /api/v1/clinical/encounters { assessment, icd10Codes }",
+          "validation": "Standard ICD-10 list format",
+          "repo_layer": "ClinicalEncounterRepository.createEncounter",
+          "db_column": "mc_encounters.assessment (TEXT)",
+          "persistence": "InnoDB Physical Commit",
+          "read_back": "Verified via SELECT assessment FROM mc_encounters",
+          "rehydration": "DiagnosisHistoryBadge"
+        }
+      ]
+    },
+    {
+      "entity": "mc_visits",
+      "fields": [
+        {
+          "field": "net_amount",
+          "ui_input": "VisitPricingCalculator (Auto-calculated)",
+          "api_payload": "POST /api/v1/visits { grossAmount, discountAmount }",
+          "validation": "Gross - Discount = Net (Decimal 14,4 exact)",
+          "repo_layer": "VisitFinancialService.createVisitWithCostLines",
+          "db_column": "mc_visits.net_amount (DECIMAL 14,4)",
+          "persistence": "InnoDB Physical Commit, Invariant: Net >= 0",
+          "read_back": "Verified via SELECT net_amount FROM mc_visits",
+          "rehydration": "CashierTotalDueDisplay"
+        },
+        {
+          "field": "paid_amount",
+          "ui_input": "PaymentCollectionDialog.amountPaidInput",
+          "api_payload": "POST /api/v1/visits/{id}/pay { paymentAmount, shiftId }",
+          "validation": "Positive Decimal, must not exceed remaining balance",
+          "repo_layer": "VisitFinancialService.collectPayment",
+          "db_column": "mc_visits.paid_amount (DECIMAL 14,4)",
+          "persistence": "InnoDB Physical Commit, updates shift cash_in",
+          "read_back": "Verified via SELECT paid_amount FROM mc_visits",
+          "rehydration": "ReceiptPaymentSummary"
+        }
+      ]
+    },
+    {
+      "entity": "mc_financial_postings",
+      "fields": [
+        {
+          "field": "amount",
+          "ui_input": "System Generated Posting",
+          "api_payload": "Internal double-entry posting ledger",
+          "validation": "Decimal 14,4, Debits == Credits invariant",
+          "repo_layer": "TransactionManager (TxContext)",
+          "db_column": "mc_financial_postings.amount (DECIMAL 14,4)",
+          "persistence": "InnoDB Physical Commit, linked to event_id",
+          "read_back": "Verified via SELECT SUM(amount) FROM mc_financial_postings",
+          "rehydration": "GeneralLedgerTrialBalance"
+        },
+        {
+          "field": "direction",
+          "ui_input": "Rule Engine Posting Direction",
+          "api_payload": "DEBIT or CREDIT",
+          "validation": "ENUM('DEBIT','CREDIT')",
+          "repo_layer": "VisitFinancialService / SettlementRepository",
+          "db_column": "mc_financial_postings.direction (ENUM)",
+          "persistence": "InnoDB Physical Commit",
+          "read_back": "Verified via SELECT direction FROM mc_financial_postings",
+          "rehydration": "DoubleEntryAuditExplorer"
+        }
+      ]
+    },
+    {
+      "entity": "mc_financial_settlements",
+      "fields": [
+        {
+          "field": "settlement_number",
+          "ui_input": "System Generated (SET-XXXXXXXX)",
+          "api_payload": "POST /api/v1/finance/settlements/request",
+          "validation": "Unique alphanumeric settlement code",
+          "repo_layer": "FinancialSettlementRepository.requestSettlement",
+          "db_column": "mc_financial_settlements.settlement_number (VARCHAR 40)",
+          "persistence": "InnoDB Physical Commit",
+          "read_back": "Verified via SELECT settlement_number FROM mc_financial_settlements",
+          "rehydration": "DualControlApprovalList"
+        },
+        {
+          "field": "currency",
+          "ui_input": "SettlementDialog.currencyDropdown (Optional, defaults to tenant)",
+          "api_payload": "POST /api/v1/finance/settlements/request { currency }",
+          "validation": "ISO-4217 code or tenant default currency resolution (GAP-017)",
+          "repo_layer": "FinancialSettlementRepository.requestSettlement",
+          "db_column": "mc_financial_settlements.currency (VARCHAR 20)",
+          "persistence": "InnoDB Physical Commit (EGP, USD, etc.)",
+          "read_back": "Verified via SELECT currency FROM mc_financial_settlements",
+          "rehydration": "SettlementVoucherPrintout"
+        },
+        {
+          "field": "status",
+          "ui_input": "Two-Person Lifecycle: REQUESTED -> APPROVED -> SETTLED",
+          "api_payload": "POST /api/v1/dual-control/... /deliver",
+          "validation": "State machine transition guard (Two-Person Integrity)",
+          "repo_layer": "FinancialSettlementRepository",
+          "db_column": "mc_financial_settlements.status (VARCHAR 30)",
+          "persistence": "InnoDB Physical Commit",
+          "read_back": "Verified via SELECT status FROM mc_financial_settlements",
+          "rehydration": "CommissionPayoutStatusBadge"
+        }
+      ]
+    },
+    {
+      "entity": "mc_staff_evaluations",
+      "fields": [
+        {
+          "field": "score",
+          "ui_input": "StaffEvaluationDialog.scoreField (Number)",
+          "api_payload": "POST /api/v1/hr/evaluations { score }",
+          "validation": "Decimal 5,2 between 0.00 and 100.00",
+          "repo_layer": "StaffEvaluationRepository.createEvaluation",
+          "db_column": "mc_staff_evaluations.score (DECIMAL 5,2)",
+          "persistence": "InnoDB Physical Commit",
+          "read_back": "Verified via SELECT score FROM mc_staff_evaluations",
+          "rehydration": "StaffEvaluationCard"
+        },
+        {
+          "field": "rating",
+          "ui_input": "StaffEvaluationDialog.ratingDropdown",
+          "api_payload": "POST /api/v1/hr/evaluations { rating }",
+          "validation": "ENUM-like string ('EXCELLENT', 'GOOD', 'NEEDS_IMPROVEMENT')",
+          "repo_layer": "StaffEvaluationRepository.createEvaluation",
+          "db_column": "mc_staff_evaluations.rating (VARCHAR 32)",
+          "persistence": "InnoDB Physical Commit",
+          "read_back": "Verified via SELECT rating FROM mc_staff_evaluations",
+          "rehydration": "EmployeePerformanceBadge"
+        }
+      ]
+    }
+  ]
+}

@@ -62,6 +62,7 @@ class LocalMedCoreServer {
   late final ClinicalEventStreamService eventStreamService;
   late final ExternalPayableService externalPayableService;
   late final LanPkiService lanPkiService;
+  late final StaffEvaluationRepository staffEvaluationRepo;
   final String? runtimeDirectoryOverride;
   final String? migrationsDirectoryOverride;
   late final DatabaseLifecycleService databaseLifecycleService;
@@ -97,6 +98,7 @@ class LocalMedCoreServer {
     inventoryPharmacyRepo = InventoryPharmacyRepository(txManager);
     inpatientRepo = InpatientAdmissionRepository(txManager);
     settlementRepo = FinancialSettlementRepository(txManager);
+    staffEvaluationRepo = StaffEvaluationRepository(txManager);
     dualControlRepo = DualControlRepository(txManager);
     facilityConfigService = FacilityConfigService(db);
     technicianService = TechnicianService(
@@ -657,6 +659,49 @@ class LocalMedCoreServer {
       });
     });
 
+    // =========================================================================
+    // HR Staff Evaluations (GAP-015 / HR-002)
+    // =========================================================================
+    router.get('/api/v1/hr/evaluations', (Request req) async {
+      final scope = await _authorize(req, requiredPermission: 'hr_Employees');
+      final staffIdParam = req.url.queryParameters['staffId'];
+      final staffId = staffIdParam != null ? int.tryParse(staffIdParam) : null;
+      final evals = await staffEvaluationRepo.listEvaluations(
+        scope: scope,
+        staffId: staffId,
+      );
+      return _jsonOk({
+        'hospitalCode': scope.hospitalCode,
+        'count': evals.length,
+        'evaluations': evals,
+      });
+    });
+
+    router.post('/api/v1/hr/evaluations', (Request req) async {
+      final scope = await _authorize(
+        req,
+        requiredPermission: 'hr_Employees',
+        requireCanEdit: true,
+      );
+      final body = await _readJsonBody(req);
+      final staffId = int.tryParse(body['staffId'].toString());
+      if (staffId == null) {
+        return _jsonError(400, 'INVALID_STAFF_ID', 'staffId is required and must be an integer.');
+      }
+      final res = await staffEvaluationRepo.createEvaluation(
+        scope: scope,
+        staffId: staffId,
+        evaluationPeriod: (body['evaluationPeriod'] ?? '2026-Q1').toString(),
+        score: Decimal.parse((body['score'] ?? '0.00').toString()),
+        rating: (body['rating'] ?? 'GOOD').toString(),
+        strengths: body['strengths']?.toString(),
+        improvements: body['improvements']?.toString(),
+        notes: body['notes']?.toString(),
+        status: (body['status'] ?? 'FINALIZED').toString(),
+      );
+      return _jsonOk(res, statusCode: 201);
+    });
+
     router.post('/api/v1/auth/change-password', (Request req) async {
       final authHeader = req.headers['authorization'] ?? '';
       if (!authHeader.startsWith('Bearer ')) {
@@ -1212,6 +1257,7 @@ class LocalMedCoreServer {
         doctorId: int.parse(body['doctorId'].toString()),
         settleAmount: Decimal.parse(body['settleAmount'].toString()),
         shiftId: int.parse(body['shiftId'].toString()),
+        currency: body['currency']?.toString(),
         notes: body['notes']?.toString(),
       );
       return _jsonOk(res, statusCode: 201);

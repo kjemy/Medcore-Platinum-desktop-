@@ -1,0 +1,613 @@
+{
+  "total_endpoints": 76,
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "role": "Public",
+      "permission": "None",
+      "secure_lock": false,
+      "description": "Local employee authentication, issue session token"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "role": "Authenticated",
+      "permission": "None",
+      "secure_lock": false,
+      "description": "Revoke current active session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "role": "Authenticated",
+      "permission": "None",
+      "secure_lock": false,
+      "description": "Get current session profile & permissions"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/change-password",
+      "role": "Authenticated",
+      "permission": "None",
+      "secure_lock": false,
+      "description": "Change own password & enforce PBKDF2"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/staff",
+      "role": "HospitalAdmin+",
+      "permission": "hr_Employees",
+      "secure_lock": false,
+      "description": "List all staff in tenant"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/staff",
+      "role": "HospitalAdmin+",
+      "permission": "hr_Employees",
+      "secure_lock": false,
+      "description": "Create staff record with PBKDF2 hash"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/staff/{id}/permissions",
+      "role": "HospitalAdmin+",
+      "permission": "settings_Permissions",
+      "secure_lock": false,
+      "description": "Update permissions mode & flags"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/employees",
+      "role": "HospitalAdmin+",
+      "permission": "settings_Users",
+      "secure_lock": false,
+      "description": "List employees for user administration"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/employees",
+      "role": "HospitalAdmin+",
+      "permission": "settings_Users",
+      "secure_lock": false,
+      "description": "Admin creates employee account"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/employees/{id}",
+      "role": "HospitalAdmin+",
+      "permission": "settings_Users",
+      "secure_lock": false,
+      "description": "Update employee profile & permissions"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/employees/{id}/reset-password",
+      "role": "HospitalAdmin+",
+      "permission": "settings_Users",
+      "secure_lock": false,
+      "description": "Admin resets password & revokes sessions"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/employees/{id}/status",
+      "role": "HospitalAdmin+",
+      "permission": "settings_Users",
+      "secure_lock": false,
+      "description": "Activate/deactivate employee account"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/employees/{id}/revoke-sessions",
+      "role": "HospitalAdmin+",
+      "permission": "settings_Users",
+      "secure_lock": false,
+      "description": "Revoke all active sessions for employee"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/employees/{id}/audit",
+      "role": "HospitalAdmin+",
+      "permission": "settings_Users",
+      "secure_lock": false,
+      "description": "Audit history for employee"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/hr/evaluations",
+      "role": "HospitalAdmin+",
+      "permission": "hr_Employees",
+      "secure_lock": false,
+      "description": "List HR staff evaluations for tenant"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/hr/evaluations",
+      "role": "HospitalAdmin+",
+      "permission": "hr_Employees",
+      "secure_lock": false,
+      "description": "Create staff performance evaluation"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/patients",
+      "role": "Staff",
+      "permission": "patients_View",
+      "secure_lock": false,
+      "description": "List / search patients in tenant"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/patients",
+      "role": "Receptionist+",
+      "permission": "patients_Create",
+      "secure_lock": false,
+      "description": "Register patient with dynamic facility fields"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/patients/{id}",
+      "role": "Staff",
+      "permission": "patients_View",
+      "secure_lock": false,
+      "description": "Get patient demographic & clinical profile"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/patients/{id}",
+      "role": "Receptionist+",
+      "permission": "patients_Edit",
+      "secure_lock": false,
+      "description": "Update patient demographic details"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/patients/{id}/ledger",
+      "role": "Cashier+",
+      "permission": "finance_Ledger",
+      "secure_lock": false,
+      "description": "Get authoritative patient financial ledger"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/appointments",
+      "role": "Staff",
+      "permission": "appointments_View",
+      "secure_lock": false,
+      "description": "List scheduled appointments with scope filtering"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/appointments",
+      "role": "Receptionist+",
+      "permission": "appointments_Create",
+      "secure_lock": false,
+      "description": "Book new clinic appointment"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/appointments/{id}/checkin",
+      "role": "Receptionist+",
+      "permission": "appointments_Edit",
+      "secure_lock": false,
+      "description": "Check in patient and transition status"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/clinical/queue",
+      "role": "Doctor+",
+      "permission": "clinical_Queue",
+      "secure_lock": false,
+      "description": "Doctor clinic queue of waiting patients"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/clinical/encounters",
+      "role": "Doctor",
+      "permission": "clinical_Encounters",
+      "secure_lock": false,
+      "description": "Create SOAP clinical encounter"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/clinical/encounters/{id}",
+      "role": "Doctor+",
+      "permission": "clinical_Encounters",
+      "secure_lock": false,
+      "description": "Retrieve clinical encounter details"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/clinical/events/stream",
+      "role": "ClinicalStaff",
+      "permission": "clinical_Queue",
+      "secure_lock": false,
+      "description": "SSE Real-time clinical event stream (GAP-019)"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/prescriptions",
+      "role": "Doctor",
+      "permission": "clinical_Prescriptions",
+      "secure_lock": false,
+      "description": "Issue multi-item electronic prescription"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/prescriptions/{id}",
+      "role": "Clinical/Pharmacist",
+      "permission": "clinical_Prescriptions",
+      "secure_lock": false,
+      "description": "Get prescription item details"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/diagnostics/orders",
+      "role": "Doctor",
+      "permission": "diagnostics_Orders",
+      "secure_lock": false,
+      "description": "Order laboratory or radiology tests"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/diagnostics/orders/{id}",
+      "role": "Lab/Radiology",
+      "permission": "diagnostics_Orders",
+      "secure_lock": false,
+      "description": "Get diagnostic order details"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/diagnostics/results",
+      "role": "Lab/Radiology",
+      "permission": "diagnostics_Results",
+      "secure_lock": false,
+      "description": "Upload verified diagnostic results"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/pharmacy/inventory",
+      "role": "Pharmacist+",
+      "permission": "pharmacy_Inventory",
+      "secure_lock": false,
+      "description": "List inventory balances & batches"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/pharmacy/dispense",
+      "role": "Pharmacist",
+      "permission": "pharmacy_Dispense",
+      "secure_lock": false,
+      "description": "Atomic dispense, inventory deduction & posting"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/inpatient/admissions",
+      "role": "HospitalAdmin+",
+      "permission": "inpatient_Admit",
+      "secure_lock": false,
+      "description": "Admit patient to ward and assign bed"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/inpatient/admissions/{id}/discharge",
+      "role": "HospitalAdmin+",
+      "permission": "inpatient_Discharge",
+      "secure_lock": false,
+      "description": "Discharge inpatient and release bed"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/specialty/nursing/tasks",
+      "role": "Nurse+",
+      "permission": "nursing_Tasks",
+      "secure_lock": false,
+      "description": "List pending nursing tasks"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/specialty/nursing/tasks",
+      "role": "Nurse+",
+      "permission": "nursing_Tasks",
+      "secure_lock": false,
+      "description": "Create and assign nursing task"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/specialty/nursing/tasks/{id}/complete",
+      "role": "Nurse+",
+      "permission": "nursing_Tasks",
+      "secure_lock": false,
+      "description": "Mark nursing task completed"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/specialty/icu/flowsheets",
+      "role": "Doctor/Nurse",
+      "permission": "icu_Management",
+      "secure_lock": false,
+      "description": "Record ICU vitals flowsheet & ventilator data"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/specialty/icu/flowsheets",
+      "role": "Doctor/Nurse",
+      "permission": "icu_Management",
+      "secure_lock": false,
+      "description": "Get ICU flowsheet history"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/specialty/surgeries",
+      "role": "Surgeon/Doctor",
+      "permission": "surgery_Management",
+      "secure_lock": false,
+      "description": "Schedule surgical operation"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/specialty/surgeries/{id}/status",
+      "role": "Surgeon/Doctor",
+      "permission": "surgery_Management",
+      "secure_lock": false,
+      "description": "Update surgery state (STARTED, COMPLETED)"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/specialty/dialysis/sessions",
+      "role": "DialysisStaff",
+      "permission": "dialysis_Management",
+      "secure_lock": false,
+      "description": "Start hemodialysis session"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/specialty/dialysis/sessions/{id}/complete",
+      "role": "DialysisStaff",
+      "permission": "dialysis_Management",
+      "secure_lock": false,
+      "description": "Complete dialysis session & vitals"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/visits",
+      "role": "Receptionist+",
+      "permission": "visits_Create",
+      "secure_lock": false,
+      "description": "Open visit with cost split lines"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/visits/{id}",
+      "role": "Staff",
+      "permission": "visits_View",
+      "secure_lock": false,
+      "description": "Get visit status, items and balance"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/visits/{id}/pay",
+      "role": "Cashier",
+      "permission": "cashier_Collect",
+      "secure_lock": false,
+      "description": "Atomic payment, shift cash_in & postings"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/shifts/open",
+      "role": "Cashier",
+      "permission": "shifts_Manage",
+      "secure_lock": false,
+      "description": "Open cashier shift with starting cash"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/shifts/current",
+      "role": "Cashier",
+      "permission": "shifts_Manage",
+      "secure_lock": false,
+      "description": "Get currently active cashier shift"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/shifts/close",
+      "role": "Cashier",
+      "permission": "shifts_Manage",
+      "secure_lock": false,
+      "description": "Close shift with strict variance reconciliation (FIN-006)"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/finance/settlements/request",
+      "role": "Cashier",
+      "permission": "finance_Settlements",
+      "secure_lock": true,
+      "description": "Step 1: Request doctor settlement (Dynamic Currency GAP-017)"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/dual-control/requests/{id}/decide",
+      "role": "Supervisor+",
+      "permission": "dual_control_Approve",
+      "secure_lock": false,
+      "description": "Step 2: Dual control approval / rejection"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/finance/settlements/{id}/deliver",
+      "role": "Cashier",
+      "permission": "finance_Settlements",
+      "secure_lock": true,
+      "description": "Step 3: Cashier deliver payout, consume accruals"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/finance/external-payables",
+      "role": "Finance+",
+      "permission": "finance_Payables",
+      "secure_lock": false,
+      "description": "List external vendor payables & aging"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/finance/external-payables",
+      "role": "Finance+",
+      "permission": "finance_Payables",
+      "secure_lock": false,
+      "description": "Create vendor payable obligation"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/finance/external-payables/{id}/settle",
+      "role": "Finance+",
+      "permission": "finance_Payables",
+      "secure_lock": true,
+      "description": "Settle vendor payable & record postings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/facility/config",
+      "role": "Staff",
+      "permission": "settings_View",
+      "secure_lock": false,
+      "description": "Get facility configuration & dynamic fields"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/facility/config",
+      "role": "HospitalAdmin+",
+      "permission": "settings_Facility",
+      "secure_lock": false,
+      "description": "Update facility name, currency, specialty"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/technician/login",
+      "role": "Technician",
+      "permission": "None",
+      "secure_lock": false,
+      "description": "Technician token/installation secret login"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/technician/status",
+      "role": "Technician",
+      "permission": "None",
+      "secure_lock": false,
+      "description": "Verify system health & monotonic clock"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/technician/config",
+      "role": "Technician",
+      "permission": "None",
+      "secure_lock": false,
+      "description": "Low-level system configuration override"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/lan/pki/status",
+      "role": "HospitalAdmin+",
+      "permission": "settings_LAN",
+      "secure_lock": false,
+      "description": "Get local PKI CA & TLS certificate status"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lan/pki/issue",
+      "role": "HospitalAdmin+",
+      "permission": "settings_LAN",
+      "secure_lock": false,
+      "description": "Issue TLS certificate for pairing client device"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/network/devices/pair",
+      "role": "HospitalAdmin+",
+      "permission": "settings_LAN",
+      "secure_lock": false,
+      "description": "Approve paired device via 6-digit code"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/lifecycle/status",
+      "role": "HospitalAdmin+",
+      "permission": "maintenance_View",
+      "secure_lock": false,
+      "description": "Inspect database lifecycle & table row counts"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lifecycle/backup",
+      "role": "HospitalAdmin+",
+      "permission": "maintenance_Execute",
+      "secure_lock": true,
+      "description": "Execute full MariaDB backup with HMAC manifest"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/lifecycle/backups",
+      "role": "HospitalAdmin+",
+      "permission": "maintenance_View",
+      "secure_lock": false,
+      "description": "List existing backups with integrity status"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lifecycle/backups/{id}/verify",
+      "role": "HospitalAdmin+",
+      "permission": "maintenance_View",
+      "secure_lock": false,
+      "description": "Verify backup checksums & manifest HMAC"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lifecycle/export",
+      "role": "HospitalAdmin+",
+      "permission": "maintenance_Execute",
+      "secure_lock": true,
+      "description": "Export tenant data (SQL, JSON, XLSX, CSV)"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lifecycle/restore",
+      "role": "HospitalAdmin+",
+      "permission": "maintenance_Execute",
+      "secure_lock": true,
+      "description": "Restore backup with trial-balance conservation"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lifecycle/factory-reset",
+      "role": "HospitalAdmin+",
+      "permission": "maintenance_Execute",
+      "secure_lock": true,
+      "description": "Hardened factory reset ('RESET MEDCORE')"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lifecycle/rebuild",
+      "role": "HospitalAdmin+",
+      "permission": "maintenance_Execute",
+      "secure_lock": true,
+      "description": "Rebuild schema V001..V016 idempotently"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/lifecycle/download/{filename}",
+      "role": "HospitalAdmin+",
+      "permission": "maintenance_View",
+      "secure_lock": false,
+      "description": "Download exported archive"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/maintenance/report",
+      "role": "HospitalAdmin+",
+      "permission": "maintenance_View",
+      "secure_lock": false,
+      "description": "Generate comprehensive system health report"
+    }
+  ]
+}

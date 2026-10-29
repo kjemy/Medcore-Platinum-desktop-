@@ -1306,12 +1306,28 @@ class FinancialSettlementRepository {
     required int doctorId,
     required Decimal settleAmount,
     required int shiftId,
+    String? currency,
     String? notes,
   }) async {
     if (settleAmount <= Decimal.zero) {
       throw ArgumentError('Settlement amount must be positive and greater than zero.');
     }
     return await txManager.runInTransaction((tx) async {
+      // 0. Resolve currency from parameter or tenant configuration (GAP-017)
+      var resolvedCurrency = (currency != null && currency.trim().isNotEmpty)
+          ? currency.trim().toUpperCase()
+          : null;
+      if (resolvedCurrency == null) {
+        final tRes = await tx.execute(
+          'SELECT default_currency FROM mc_tenants WHERE hospital_code = :hosp LIMIT 1',
+          {'hosp': scope.hospitalCode},
+        );
+        if (tRes.rows.isNotEmpty) {
+          resolvedCurrency = tRes.rows.first.colByName('default_currency');
+        }
+        resolvedCurrency ??= 'EGP';
+      }
+
       // 1. Verify doctor exists in tenant
       final docRes = await tx.execute(
         'SELECT id FROM mc_staff WHERE hospital_code = :hosp AND id = :docId',
@@ -1369,7 +1385,7 @@ class FinancialSettlementRepository {
           requested_at, approved_at, delivered_at, idempotency_key
         ) VALUES (
           :hosp, :pub_id, :tenant, 0, :sno,
-          'COMMISSION_PAYOUT', :amt, 'EGP', 'DOCTOR', :doc_id,
+          'COMMISSION_PAYOUT', :amt, :curr, 'DOCTOR', :doc_id,
           'REQUESTED', :requester, NULL, NULL,
           NOW(), NULL, NULL, :idemp
         )
@@ -1380,6 +1396,7 @@ class FinancialSettlementRepository {
           'tenant': scope.hospitalCode,
           'sno': setNo,
           'amt': settleAmount.toStringAsFixed(4),
+          'curr': resolvedCurrency,
           'doc_id': doctorId.toString(),
           'requester': scope.actor.fullName,
           'idemp': 'IDEMP-$setNo',
@@ -1443,6 +1460,7 @@ class FinancialSettlementRepository {
         'settlementNumber': setNo,
         'doctorId': doctorId,
         'amount': settleAmount.toStringAsFixed(4),
+        'currency': resolvedCurrency,
         'status': 'REQUESTED',
       };
     });
@@ -1895,5 +1913,122 @@ class DualControlRepository {
         'approverStaffId': scope.actor.id,
       };
     });
+  }
+}
+
+// =========================================================================
+// STAFF EVALUATIONS REPOSITORY (HR-002 / GAP-015)
+// =========================================================================
+
+class StaffEvaluationRepository {
+  final TransactionManager txManager;
+
+  StaffEvaluationRepository(this.txManager);
+
+  Future<Map<String, dynamic>> createEvaluation({
+    required ScopeContext scope,
+    required int staffId,
+    required String evaluationPeriod,
+    required Decimal score,
+    required String rating,
+    String? strengths,
+    String? improvements,
+    String? notes,
+    String status = 'FINALIZED',
+  }) async {
+    return await txManager.runInTransaction((tx) async {
+      // Verify target staff exists in tenant
+      final sRes = await tx.execute(
+        'SELECT id, full_name, role FROM mc_staff WHERE hospital_code = :hosp AND id = :sid',
+        {'hosp': scope.hospitalCode, 'sid': staffId},
+      );
+      if (sRes.rows.isEmpty) {
+        throw StateError('Staff member $staffId not found in tenant ${scope.hospitalCode}.');
+      }
+
+      final ins = await tx.execute(
+        '''
+        INSERT INTO mc_staff_evaluations (
+          hospital_code, staff_id, evaluator_staff_id, evaluation_period,
+          score, rating, strengths, improvements, notes, status, created_at
+        ) VALUES (
+          :hosp, :sid, :evaluator_id, :period,
+          :score, :rating, :strengths, :improvements, :notes, :status, NOW()
+        )
+        ''',
+        {
+          'hosp': scope.hospitalCode,
+          'sid': staffId,
+          'evaluator_id': scope.actor.id,
+          'period': evaluationPeriod,
+          'score': score.toStringAsFixed(2),
+          'rating': rating,
+          'strengths': strengths,
+          'improvements': improvements,
+          'notes': notes,
+          'status': status,
+        },
+      );
+      final evalId = ins.lastInsertID.toInt();
+
+      await tx.writeAuditLog(
+        hospitalCode: scope.hospitalCode,
+        actorStaffId: scope.actor.id,
+        actorRole: scope.actor.role.name,
+        deviceId: scope.deviceId,
+        action: 'hr.evaluation_created',
+        entityType: 'mc_staff_evaluations',
+        entityId: evalId.toString(),
+        afterState: {
+          'evaluationId': evalId,
+          'staffId': staffId,
+          'score': score.toStringAsFixed(2),
+          'rating': rating,
+          'period': evaluationPeriod,
+        },
+      );
+
+      return {
+        'id': evalId,
+        'hospitalCode': scope.hospitalCode,
+        'staffId': staffId,
+        'evaluatorStaffId': scope.actor.id,
+        'evaluationPeriod': evaluationPeriod,
+        'score': score.toStringAsFixed(2),
+        'rating': rating,
+        'strengths': strengths,
+        'improvements': improvements,
+        'notes': notes,
+        'status': status,
+      };
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> listEvaluations({
+    required ScopeContext scope,
+    int? staffId,
+  }) async {
+    final sql = staffId != null
+        ? '''
+          SELECT e.*, s.full_name as staff_name, s.staff_code, ev.full_name as evaluator_name
+          FROM mc_staff_evaluations e
+          JOIN mc_staff s ON e.staff_id = s.id AND e.hospital_code = s.hospital_code
+          LEFT JOIN mc_staff ev ON e.evaluator_staff_id = ev.id
+          WHERE e.hospital_code = :hosp AND e.staff_id = :sid
+          ORDER BY e.created_at DESC
+          '''
+        : '''
+          SELECT e.*, s.full_name as staff_name, s.staff_code, ev.full_name as evaluator_name
+          FROM mc_staff_evaluations e
+          JOIN mc_staff s ON e.staff_id = s.id AND e.hospital_code = s.hospital_code
+          LEFT JOIN mc_staff ev ON e.evaluator_staff_id = ev.id
+          WHERE e.hospital_code = :hosp
+          ORDER BY e.created_at DESC
+          ''';
+    final params = <String, dynamic>{'hosp': scope.hospitalCode};
+    if (staffId != null) params['sid'] = staffId;
+
+    final res = await txManager.db.execute(sql, params);
+    return res.rows.map((r) => r.assoc()).toList();
   }
 }

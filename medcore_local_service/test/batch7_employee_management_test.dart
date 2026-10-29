@@ -463,4 +463,60 @@ void main() {
     );
     expect(crossRes.statusCode, equals(403), reason: 'Tenant crossing rejected fail-closed');
   });
+
+  test('11. HR Staff Evaluations: Create, List, and Physical Database Persistence (GAP-015)', () async {
+    final adminToken = await login('ADMIN-01', 'AdminMaster123!');
+    final staffRows = await db.execute(
+      'SELECT id FROM mc_staff WHERE staff_code = "DOC-101" AND hospital_code = "HOSP_EMP"',
+    );
+    final docId = int.parse(staffRows.rows.first.colByName('id')!);
+
+    // Create staff evaluation
+    final evalRes = await http.post(
+      Uri.parse('$baseUrl/api/v1/hr/evaluations'),
+      headers: {
+        'authorization': 'Bearer $adminToken',
+        'content-type': 'application/json',
+        'x-tenant-id': 'HOSP_EMP',
+        'x-medcore-device-id': 'DEV-ADMIN',
+      },
+      body: jsonEncode({
+        'staffId': docId,
+        'evaluationPeriod': '2026-Q1',
+        'score': '95.50',
+        'rating': 'EXCELLENT',
+        'strengths': 'Exceptional diagnostic accuracy and bedside manner',
+        'improvements': 'None noted',
+        'notes': 'Promoted to senior attending',
+        'status': 'FINALIZED',
+      }),
+    );
+    expect(evalRes.statusCode, equals(201));
+    final evalData = jsonDecode(evalRes.body)['data'];
+    final evalId = evalData['id'];
+    expect(evalId, isNotNull);
+
+    // Read back via list endpoint
+    final listRes = await http.get(
+      Uri.parse('$baseUrl/api/v1/hr/evaluations?staffId=$docId'),
+      headers: {
+        'authorization': 'Bearer $adminToken',
+        'x-tenant-id': 'HOSP_EMP',
+        'x-medcore-device-id': 'DEV-ADMIN',
+      },
+    );
+    expect(listRes.statusCode, equals(200));
+    final listData = jsonDecode(listRes.body)['data'];
+    expect(listData['count'], greaterThanOrEqualTo(1));
+    expect(listData['evaluations'].first['rating'], equals('EXCELLENT'));
+
+    // Physical MariaDB assertion
+    final physicalRows = await db.execute(
+      'SELECT score, rating, status FROM mc_staff_evaluations WHERE id = :id AND hospital_code = "HOSP_EMP"',
+      {'id': evalId},
+    );
+    expect(physicalRows.rows.length, equals(1));
+    expect(physicalRows.rows.first.colByName('rating'), equals('EXCELLENT'));
+    expect(physicalRows.rows.first.colByName('status'), equals('FINALIZED'));
+  });
 }

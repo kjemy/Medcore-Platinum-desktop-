@@ -1,0 +1,212 @@
+{
+  "total_routes": 23,
+  "routes": [
+    {
+      "route_name": "/login",
+      "screen_widget": "LoginScreen",
+      "controller": "AuthController",
+      "role_required": "None",
+      "permission_required": "None",
+      "module_toggle": "AlwaysEnabled",
+      "description": "Local workstation login with tenant & device pairing binding"
+    },
+    {
+      "route_name": "/dashboard",
+      "screen_widget": "MainShellScreen",
+      "controller": "NavigationController",
+      "role_required": "Authenticated",
+      "permission_required": "None",
+      "module_toggle": "AlwaysEnabled",
+      "description": "Master navigation shell adapting tabs dynamically to user role & enabled modules"
+    },
+    {
+      "route_name": "/patients",
+      "screen_widget": "PatientRegistrationScreen",
+      "controller": "PatientController",
+      "role_required": "Receptionist, Doctor, Nurse, Admin",
+      "permission_required": "patients_View",
+      "module_toggle": "AlwaysEnabled",
+      "description": "Patient intake with facility-specific dynamic fields (REQUIRED, OPTIONAL, HIDDEN)"
+    },
+    {
+      "route_name": "/appointments",
+      "screen_widget": "AppointmentsScreen",
+      "controller": "AppointmentController",
+      "role_required": "Receptionist, Doctor, Admin",
+      "permission_required": "appointments_View",
+      "module_toggle": "module_appointments",
+      "description": "Clinic appointments schedule, calendar and check-in"
+    },
+    {
+      "route_name": "/clinical/queue",
+      "screen_widget": "DoctorQueueScreen",
+      "controller": "ClinicalQueueController",
+      "role_required": "Doctor, Nurse",
+      "permission_required": "clinical_Queue",
+      "module_toggle": "module_clinical",
+      "description": "Doctor waiting queue with SSE real-time updates"
+    },
+    {
+      "route_name": "/clinical/encounter",
+      "screen_widget": "ClinicalEncounterScreen",
+      "controller": "ClinicalEncounterController",
+      "role_required": "Doctor",
+      "permission_required": "clinical_Encounters",
+      "module_toggle": "module_clinical",
+      "description": "SOAP clinical note taking, ICD-10 diagnoses, and e-Rx issuance"
+    },
+    {
+      "route_name": "/pharmacy",
+      "screen_widget": "PharmacyInventoryScreen",
+      "controller": "PharmacyController",
+      "role_required": "Pharmacist, Admin",
+      "permission_required": "pharmacy_Inventory",
+      "module_toggle": "module_pharmacy",
+      "description": "Drug dispensing, batch lot tracking, expiry checks and stock movements"
+    },
+    {
+      "route_name": "/diagnostics",
+      "screen_widget": "DiagnosticsScreen",
+      "controller": "DiagnosticsController",
+      "role_required": "Lab, Radiology, Doctor, Admin",
+      "permission_required": "diagnostics_Orders",
+      "module_toggle": "module_laboratory / module_radiology",
+      "description": "Lab and radiology order worklists and result uploads"
+    },
+    {
+      "route_name": "/inpatient",
+      "screen_widget": "InpatientAdmissionScreen",
+      "controller": "InpatientController",
+      "role_required": "Doctor, Nurse, Admin",
+      "permission_required": "inpatient_Admit",
+      "module_toggle": "module_inpatient",
+      "description": "Ward bed allocation, patient admissions, and discharge"
+    },
+    {
+      "route_name": "/specialty/nursing",
+      "screen_widget": "NursingWorklistScreen",
+      "controller": "SpecialtyClinicalController",
+      "role_required": "Nurse, Doctor",
+      "permission_required": "nursing_Tasks",
+      "module_toggle": "module_nursing",
+      "description": "Nursing task assignments, medication administration, and vitals recording"
+    },
+    {
+      "route_name": "/specialty/icu",
+      "screen_widget": "IcuFlowsheetScreen",
+      "controller": "SpecialtyClinicalController",
+      "role_required": "Doctor, Nurse",
+      "permission_required": "icu_Management",
+      "module_toggle": "module_icu",
+      "description": "Intensive Care Unit telemetry, hourly flowsheets, and ventilator monitoring"
+    },
+    {
+      "route_name": "/specialty/surgery",
+      "screen_widget": "SurgeryScheduleScreen",
+      "controller": "SpecialtyClinicalController",
+      "role_required": "Surgeon, Doctor, Admin",
+      "permission_required": "surgery_Management",
+      "module_toggle": "module_surgery",
+      "description": "Operating theater booking, surgical staff assignment, and operation logs"
+    },
+    {
+      "route_name": "/specialty/dialysis",
+      "screen_widget": "DialysisSessionScreen",
+      "controller": "SpecialtyClinicalController",
+      "role_required": "Doctor, Nurse",
+      "permission_required": "dialysis_Management",
+      "module_toggle": "module_dialysis",
+      "description": "Hemodialysis pre/post-session weights, ultrafiltration and vitals logs"
+    },
+    {
+      "route_name": "/cashier/shift",
+      "screen_widget": "ShiftReconciliationScreen",
+      "controller": "ShiftController",
+      "role_required": "Cashier",
+      "permission_required": "shifts_Manage",
+      "module_toggle": "AlwaysEnabled",
+      "description": "Shift opening, live cash balancing, variance reconciliation, and closure"
+    },
+    {
+      "route_name": "/cashier/billing",
+      "screen_widget": "CashierBillingScreen",
+      "controller": "BillingController",
+      "role_required": "Cashier",
+      "permission_required": "cashier_Collect",
+      "module_toggle": "AlwaysEnabled",
+      "description": "Patient visit checkout, payment collection, and ESC/POS thermal printing"
+    },
+    {
+      "route_name": "/finance/settlements",
+      "screen_widget": "DoctorSettlementScreen",
+      "controller": "SettlementController",
+      "role_required": "Cashier, Supervisor, Admin",
+      "permission_required": "finance_Settlements",
+      "module_toggle": "module_finance",
+      "description": "Two-person integrity doctor commission settlements (Dual Control Request)"
+    },
+    {
+      "route_name": "/finance/dual-control",
+      "screen_widget": "DualControlApprovalScreen",
+      "controller": "DualControlController",
+      "role_required": "HospitalAdmin, Supervisor",
+      "permission_required": "dual_control_Approve",
+      "module_toggle": "module_finance",
+      "description": "Dual control supervisor decision gate for settlements and refunds"
+    },
+    {
+      "route_name": "/finance/payables",
+      "screen_widget": "ExternalPayablesScreen",
+      "controller": "PayablesController",
+      "role_required": "HospitalAdmin, Finance",
+      "permission_required": "finance_Payables",
+      "module_toggle": "module_finance",
+      "description": "External supplier liabilities and vendor payment records"
+    },
+    {
+      "route_name": "/admin/employees",
+      "screen_widget": "AdminEmployeeManagementScreen",
+      "controller": "EmployeeAdminController",
+      "role_required": "HospitalAdmin, SuperAdmin",
+      "permission_required": "settings_Users",
+      "module_toggle": "AlwaysEnabled",
+      "description": "Staff account provisioning, PBKDF2 reset, status toggle, and audit history"
+    },
+    {
+      "route_name": "/hr/evaluations",
+      "screen_widget": "StaffEvaluationsScreen",
+      "controller": "HrEvaluationController",
+      "role_required": "HospitalAdmin, SuperAdmin",
+      "permission_required": "hr_Employees",
+      "module_toggle": "AlwaysEnabled",
+      "description": "HR employee periodic performance evaluations (GAP-015)"
+    },
+    {
+      "route_name": "/admin/facility-config",
+      "screen_widget": "FacilityConfigScreen",
+      "controller": "FacilityConfigController",
+      "role_required": "HospitalAdmin, SuperAdmin",
+      "permission_required": "settings_Facility",
+      "module_toggle": "AlwaysEnabled",
+      "description": "Facility branding, hospital type, dynamic field configurations, and LAN pairing"
+    },
+    {
+      "route_name": "/maintenance/lifecycle",
+      "screen_widget": "DatabaseLifecycleScreen",
+      "controller": "LifecycleController",
+      "role_required": "HospitalAdmin, SuperAdmin",
+      "permission_required": "maintenance_View",
+      "module_toggle": "AlwaysEnabled",
+      "description": "Backup engine, integrity audit, multi-format export, restore, and reset"
+    },
+    {
+      "route_name": "/technician",
+      "screen_widget": "TechnicianModeScreen",
+      "controller": "TechnicianController",
+      "role_required": "Technician",
+      "permission_required": "None",
+      "module_toggle": "AlwaysEnabled",
+      "description": "Protected technician hardware setup, clock rollback recovery, and diagnostics"
+    }
+  ]
+}
