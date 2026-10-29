@@ -1,0 +1,163 @@
+name: MedCore Platinum Desktop — Official Windows Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: 'Target release tag or commit SHA to build'
+        required: true
+        default: 'v1.0.0-rc.3'
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-release:
+    name: Build & Package Windows Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Release Source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.target_ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Audit & Enforce Release Source Traceability
+        shell: pwsh
+        run: |
+          $expectedCommit = "713a8a4578cb7f82258b57497afa800346280534"
+          $checkedOutSha = git rev-parse HEAD
+          $targetRef = "${{ github.event.inputs.target_ref || github.ref_name }}"
+          
+          Write-Host "============================================================"
+          Write-Host "MEDCORE PLATINUM RELEASE SOURCE TRACEABILITY AUDIT"
+          Write-Host "============================================================"
+          Write-Host "Target Reference    : $targetRef"
+          Write-Host "Triggered GITHUB_SHA: ${{ github.sha }}"
+          Write-Host "Checked-out Commit  : $checkedOutSha"
+          Write-Host "Expected RC-3 SHA   : $expectedCommit"
+          Write-Host "============================================================"
+          
+          if ($targetRef -eq "v1.0.0-rc.3" -or $targetRef -eq "refs/tags/v1.0.0-rc.3") {
+            if ($checkedOutSha -ne $expectedCommit) {
+              Write-Error "TRACEABILITY FAILURE: Checked-out commit ($checkedOutSha) does not match authoritative RC-3 commit ($expectedCommit)!"
+              exit 1
+            }
+            Write-Host "TRACEABILITY PASS: Verified exact RC-3 source commit binding."
+          }
+          
+          "BUILT_COMMIT=$checkedOutSha" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "RELEASE_REF=$targetRef" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Setup Flutter Toolchain
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Configure Flutter Windows Support
+        shell: pwsh
+        run: |
+          flutter config --enable-windows-desktop
+          flutter doctor -v
+
+      - name: Install Desktop Client Dependencies
+        working-directory: medcore_desktop
+        run: flutter pub get
+
+      - name: Run Static Code Analysis
+        working-directory: medcore_desktop
+        run: flutter analyze
+
+      - name: Run Desktop Automated Test Suite
+        working-directory: medcore_desktop
+        run: flutter test
+
+      - name: Build Windows Release Executable
+        working-directory: medcore_desktop
+        run: flutter build windows --release
+
+      - name: Verify Compiled Windows Output
+        shell: pwsh
+        run: |
+          $exePath = "medcore_desktop/build/windows/x64/runner/Release/medcore_desktop.exe"
+          if (-not (Test-Path $exePath)) {
+            Write-Error "CRITICAL: Release executable not found at $exePath"
+            exit 1
+          }
+          $item = Get-Item $exePath
+          $exeHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash
+          Write-Host "============================================================"
+          Write-Host "COMPILED WINDOWS EXECUTABLE VERIFIED"
+          Write-Host "Path      : $($item.FullName)"
+          Write-Host "Size      : $($item.Length) bytes"
+          Write-Host "SHA-256   : $exeHash"
+          Write-Host "============================================================"
+
+      - name: Package Release Bundle & Generate Manifest
+        shell: pwsh
+        run: |
+          $builtCommit = $env:BUILT_COMMIT
+          $releaseRef = $env:RELEASE_REF
+          $runId = "${{ github.run_id }}"
+          $runNumber = "${{ github.run_number }}"
+          $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          
+          $flutterLine = (flutter --version | Select-Object -First 1)
+          $dartLine = (dart --version)
+
+          $sourceDir = "medcore_desktop/build/windows/x64/runner/Release"
+          $stagingDir = "package_staging/medcore-platinum-windows-$releaseRef"
+          New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
+          
+          Copy-Item -Path "$sourceDir/*" -Destination $stagingDir -Recurse -Force
+          
+          $zipName = "medcore-platinum-windows-$releaseRef.zip"
+          Compress-Archive -Path "$stagingDir/*" -DestinationPath $zipName -Force
+          
+          $zipItem = Get-Item $zipName
+          $zipHash = (Get-FileHash -Path $zipName -Algorithm SHA256).Hash
+          
+          $manifest = [ordered]@{
+            "project" = "MedCore Platinum Desktop"
+            "release" = $releaseRef
+            "application_commit" = $builtCommit
+            "workflow_run_id" = $runId
+            "workflow_run_number" = $runNumber
+            "workflow_name" = "${{ github.workflow }}"
+            "build_timestamp" = $timestamp
+            "flutter_version" = "$flutterLine"
+            "dart_version" = "$dartLine"
+            "artifact_name" = $zipName
+            "artifact_size_bytes" = $zipItem.Length
+            "artifact_sha256" = $zipHash
+          }
+          
+          $manifestJson = $manifest | ConvertTo-Json -Depth 5
+          $manifestFile = "release_manifest.json"
+          [System.IO.File]::WriteAllText($manifestFile, $manifestJson)
+          
+          Write-Host "============================================================"
+          Write-Host "MEDCORE PLATINUM RELEASE ARTIFACT PACKAGED"
+          Write-Host "============================================================"
+          Write-Host "Artifact Name     : $zipName"
+          Write-Host "Artifact Size     : $($zipItem.Length) bytes"
+          Write-Host "Artifact SHA-256  : $zipHash"
+          Write-Host "Application Commit: $builtCommit"
+          Write-Host "============================================================"
+          Write-Host "Manifest Content:"
+          Write-Host $manifestJson
+
+      - name: Upload Windows Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: medcore-platinum-windows-v1.0.0-rc.3
+          path: |
+            medcore-platinum-windows-*.zip
+            release_manifest.json
+          if-no-files-found: error
