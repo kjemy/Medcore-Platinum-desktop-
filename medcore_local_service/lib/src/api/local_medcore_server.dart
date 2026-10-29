@@ -1551,6 +1551,137 @@ class LocalMedCoreServer {
       return _jsonOk(updated.toFullJson());
     });
 
+    // 14.1 Initial Hospital Administrator Provisioning & Handover (Technician Session ONLY)
+    router.get('/api/v1/technician/initial-admin/status', (Request req) async {
+      final techCtx = await _verifyTechnicianRequest(req);
+      final staffRows = await db.execute(
+        '''
+        SELECT id, staff_code, full_name, email, role, phone, is_active,
+               force_password_change, created_at, last_login_at
+        FROM mc_staff
+        WHERE hospital_code = :hosp
+        ORDER BY id ASC
+        ''',
+        {'hosp': techCtx.hospitalCode},
+      );
+      final staffList = staffRows.rows.map((r) => {
+        'id': r.colByName('id'),
+        'staffCode': r.colByName('staff_code'),
+        'fullName': r.colByName('full_name'),
+        'email': r.colByName('email'),
+        'role': r.colByName('role'),
+        'phone': r.colByName('phone'),
+        'isActive': r.colByName('is_active')?.toString() == '1',
+        'forcePasswordChange': r.colByName('force_password_change')?.toString() == '1',
+        'createdAt': r.colByName('created_at')?.toString(),
+        'lastLoginAt': r.colByName('last_login_at')?.toString(),
+      }).toList();
+      final admins = staffList.where((s) => s['role'] == 'HospitalAdmin' || s['role'] == 'SuperAdmin').toList();
+      return _jsonOk({
+        'hospitalCode': techCtx.hospitalCode,
+        'hasAdmin': admins.isNotEmpty,
+        'totalStaffCount': staffList.length,
+        'administrators': admins,
+        'allStaff': staffList,
+      });
+    });
+
+    router.post('/api/v1/technician/initial-admin', (Request req) async {
+      final techCtx = await _verifyTechnicianRequest(req);
+      final body = await _readJsonBody(req);
+      final staffCode = (body['staffCode'] ?? 'ADM-001').toString().trim();
+      final fullName = (body['fullName'] ?? '').toString().trim();
+      final email = (body['email'] ?? '').toString().trim();
+      var password = (body['password'] ?? '').toString();
+      final phone = body['phone']?.toString().trim();
+      final nationalId = body['nationalId']?.toString().trim();
+
+      if (staffCode.isEmpty || fullName.isEmpty || email.isEmpty) {
+        return _jsonError(
+          400,
+          'MISSING_REQUIRED_FIELDS',
+          'staffCode, fullName, and email are required to provision Hospital Administrator.',
+        );
+      }
+      if (!email.contains('@') || !email.contains('.')) {
+        return _jsonError(400, 'INVALID_EMAIL_FORMAT', 'Valid email address is required.');
+      }
+
+      // If no password supplied, securely generate a one-time credential
+      if (password.isEmpty) {
+        password = 'MedCore-${PasswordHasher.generateSecureToken(8)}!';
+      } else if (password.length < 8) {
+        return _jsonError(400, 'WEAK_PASSWORD', 'Administrator password must be at least 8 characters long.');
+      }
+
+      final repo = StaffIdentityRepository(db);
+      final existingCode = await repo.findByEmailOrCode(techCtx.hospitalCode, staffCode);
+      if (existingCode != null) {
+        return _jsonError(
+          409,
+          'DUPLICATE_STAFF_CODE',
+          'Staff member with staffCode "$staffCode" already exists in facility ${techCtx.hospitalCode}.',
+        );
+      }
+      final existingEmail = await repo.findByEmailOrCode(techCtx.hospitalCode, email);
+      if (existingEmail != null) {
+        return _jsonError(
+          409,
+          'DUPLICATE_EMAIL',
+          'Staff member with email "$email" already exists in facility ${techCtx.hospitalCode}.',
+        );
+      }
+
+      final passwordHash = PasswordHasher.hashPassword(password);
+      final created = await repo.createStaff(
+        hospitalCode: techCtx.hospitalCode,
+        staffCode: staffCode,
+        fullName: fullName,
+        email: email,
+        phone: phone?.isEmpty == true ? null : phone,
+        nationalId: nationalId?.isEmpty == true ? null : nationalId,
+        passwordHash: passwordHash,
+        role: MedCoreRole.HospitalAdmin,
+        permissionsMode: 'default',
+        isActive: true,
+        forcePasswordChange: true,
+      );
+
+      await txManager.runInTransaction((tx) async {
+        await tx.writeAuditLog(
+          hospitalCode: techCtx.hospitalCode,
+          actorRole: 'TECHNICIAN_SERVICE',
+          deviceId: techCtx.deviceId,
+          action: 'technician.initial_admin.provisioned',
+          entityType: 'mc_staff',
+          entityId: created.staffCode,
+          afterState: {
+            'staffId': created.id,
+            'role': created.role.name,
+            'staffCode': created.staffCode,
+            'email': created.email,
+            'forcePasswordChange': true,
+            'sessionUuid': techCtx.sessionUuid,
+          },
+          ipAddress: req.headers['x-forwarded-for'] ?? '127.0.0.1',
+        );
+      });
+
+      return _jsonOk(
+        {
+          'status': 'SUCCESS',
+          'message': 'Initial Hospital Administrator provisioned successfully with forced password change.',
+          'admin': created.toPublicJson(RbacEvaluator.resolveEffectivePermissions(created)),
+          'handoverTemporaryPassword': password,
+          'facilityCode': techCtx.hospitalCode,
+          'provisionedAt': DateTime.now().toUtc().toIso8601String(),
+          'technicianSessionUuid': techCtx.sessionUuid,
+          'forcePasswordChange': true,
+        },
+        statusCode: 201,
+      );
+    });
+
     router.post('/api/v1/technician/clock-recovery', (Request req) async {
       final body = await _readJsonBody(req);
       final hospitalCode =

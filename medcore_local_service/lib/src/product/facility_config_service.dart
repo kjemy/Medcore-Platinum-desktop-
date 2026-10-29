@@ -302,6 +302,27 @@ class FacilityConfigurationRecord {
     this.updatedAt,
   });
 
+  bool get isSubscriptionActive {
+    if (subscriptionExpiresUtc == null || subscriptionExpiresUtc!.trim().isEmpty) return true;
+    try {
+      final expiry = DateTime.parse(subscriptionExpiresUtc!.trim()).toUtc();
+      return DateTime.now().toUtc().isBefore(expiry);
+    } catch (_) {
+      return true;
+    }
+  }
+
+  bool get isSubscriptionExpired {
+    if (subscriptionExpiresUtc == null || subscriptionExpiresUtc!.trim().isEmpty) return false;
+    try {
+      final expiry = DateTime.parse(subscriptionExpiresUtc!.trim()).toUtc();
+      // Khaled Fail-Closed Boundary: now >= expiry => expired
+      return !DateTime.now().toUtc().isBefore(expiry);
+    } catch (_) {
+      return false;
+    }
+  }
+
   bool isModuleEnabled(String moduleName) {
     return enabledModules[moduleName] ?? true;
   }
@@ -312,6 +333,10 @@ class FacilityConfigurationRecord {
         'facilityType': facilityType,
         'branchCode': branchCode,
         'edition': edition,
+        'subscriptionStartsUtc': subscriptionStartsUtc,
+        'subscriptionExpiresUtc': subscriptionExpiresUtc,
+        'isSubscriptionActive': isSubscriptionActive,
+        'isSubscriptionExpired': isSubscriptionExpired,
         'branding': branding.toJson(),
         'networkMode': {
           'allowLanConnections': networkConfig['allowLanConnections'] ?? true,
@@ -332,6 +357,8 @@ class FacilityConfigurationRecord {
         'edition': edition,
         'subscriptionStartsUtc': subscriptionStartsUtc,
         'subscriptionExpiresUtc': subscriptionExpiresUtc,
+        'isSubscriptionActive': isSubscriptionActive,
+        'isSubscriptionExpired': isSubscriptionExpired,
         'enabledModules': enabledModules,
         'patientFields': {
           for (final entry in patientFields.entries) entry.key: entry.value.toWire(),
@@ -496,6 +523,14 @@ class FacilityConfigService {
     if (moduleName == null) return;
 
     final config = await getConfiguration(hospitalCode);
+    if (config.isSubscriptionExpired) {
+      throw RbacForbiddenException(
+        code: 'SUBSCRIPTION_EXPIRED',
+        message:
+            'Subscription for facility "${config.facilityName}" expired on ${config.subscriptionExpiresUtc}. Contact administrator or service technician to renew.',
+        requiredPermission: requiredPermission,
+      );
+    }
     if (!config.isModuleEnabled(moduleName)) {
       throw RbacForbiddenException(
         code: 'MODULE_NOT_ENTITLED',

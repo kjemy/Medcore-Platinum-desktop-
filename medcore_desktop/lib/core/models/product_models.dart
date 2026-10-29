@@ -121,6 +121,26 @@ class FacilityConfigModel {
 
   bool isModuleEnabled(String moduleName) => enabledModules[moduleName] ?? true;
 
+  bool get isSubscriptionActive {
+    if (subscriptionExpiresUtc == null || subscriptionExpiresUtc!.trim().isEmpty) return true;
+    try {
+      final expiry = DateTime.parse(subscriptionExpiresUtc!.trim()).toUtc();
+      return DateTime.now().toUtc().isBefore(expiry);
+    } catch (_) {
+      return true;
+    }
+  }
+
+  bool get isSubscriptionExpired {
+    if (subscriptionExpiresUtc == null || subscriptionExpiresUtc!.trim().isEmpty) return false;
+    try {
+      final expiry = DateTime.parse(subscriptionExpiresUtc!.trim()).toUtc();
+      return !DateTime.now().toUtc().isBefore(expiry);
+    } catch (_) {
+      return false;
+    }
+  }
+
   String fieldRequirement(String fieldKey) =>
       (patientFields[fieldKey] ?? 'OPTIONAL').toUpperCase();
 
@@ -210,6 +230,7 @@ class AuthenticatedStaffUser {
   final bool canCollectMoney;
   final bool canMakeRefunds;
   final String refundPolicy;
+  final bool forcePasswordChange;
 
   const AuthenticatedStaffUser({
     required this.id,
@@ -224,7 +245,39 @@ class AuthenticatedStaffUser {
     required this.canCollectMoney,
     required this.canMakeRefunds,
     required this.refundPolicy,
+    this.forcePasswordChange = false,
   });
+
+  AuthenticatedStaffUser copyWith({
+    int? id,
+    String? hospitalCode,
+    String? staffCode,
+    String? fullName,
+    String? email,
+    String? role,
+    Set<String>? effectivePermissions,
+    bool? canEdit,
+    bool? canDelete,
+    bool? canCollectMoney,
+    bool? canMakeRefunds,
+    String? refundPolicy,
+    bool? forcePasswordChange,
+  }) =>
+      AuthenticatedStaffUser(
+        id: id ?? this.id,
+        hospitalCode: hospitalCode ?? this.hospitalCode,
+        staffCode: staffCode ?? this.staffCode,
+        fullName: fullName ?? this.fullName,
+        email: email ?? this.email,
+        role: role ?? this.role,
+        effectivePermissions: effectivePermissions ?? this.effectivePermissions,
+        canEdit: canEdit ?? this.canEdit,
+        canDelete: canDelete ?? this.canDelete,
+        canCollectMoney: canCollectMoney ?? this.canCollectMoney,
+        canMakeRefunds: canMakeRefunds ?? this.canMakeRefunds,
+        refundPolicy: refundPolicy ?? this.refundPolicy,
+        forcePasswordChange: forcePasswordChange ?? this.forcePasswordChange,
+      );
 
   bool hasAnyPermission(Iterable<String> keys) {
     if (keys.isEmpty) return true;
@@ -260,6 +313,7 @@ class AuthenticatedStaffUser {
       canCollectMoney: flags['canCollectMoney'] == true,
       canMakeRefunds: flags['canMakeRefunds'] == true,
       refundPolicy: (flags['refundPolicy'] ?? 'none').toString(),
+      forcePasswordChange: json['forcePasswordChange'] == true,
     );
   }
 }

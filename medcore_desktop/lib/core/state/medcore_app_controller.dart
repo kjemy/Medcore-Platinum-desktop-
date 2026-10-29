@@ -265,6 +265,93 @@ class MedCoreAppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Checks whether an initial administrator has already been provisioned for the tenant.
+  Future<Map<String, dynamic>> getInitialAdminStatus() async {
+    if (!isTechnicianModeActive) {
+      throw const MedCoreApiException(
+        statusCode: 403,
+        code: 'TECHNICIAN_SESSION_REQUIRED',
+        message: 'Technician session is required to inspect initial administrator status.',
+      );
+    }
+    return await api.getJson(
+      '/api/v1/technician/initial-admin/status',
+      useTechnicianAuth: true,
+    );
+  }
+
+  /// Provisions the initial Hospital Administrator during certified technician commissioning.
+  Future<Map<String, dynamic>> provisionInitialAdmin({
+    required String staffCode,
+    required String fullName,
+    required String email,
+    required String password,
+    String? phone,
+    String? nationalId,
+  }) async {
+    if (!isTechnicianModeActive) {
+      throw const MedCoreApiException(
+        statusCode: 403,
+        code: 'TECHNICIAN_SESSION_REQUIRED',
+        message: 'Technician session is required to provision the initial administrator.',
+      );
+    }
+    _setBusy(true);
+    _globalErrorBanner = null;
+    try {
+      final res = await api.postJson(
+        '/api/v1/technician/initial-admin',
+        {
+          'staffCode': staffCode.trim(),
+          'fullName': fullName.trim(),
+          'email': email.trim(),
+          'password': password,
+          if (phone != null && phone.trim().isNotEmpty) 'phone': phone.trim(),
+          if (nationalId != null && nationalId.trim().isNotEmpty) 'nationalId': nationalId.trim(),
+        },
+        useTechnicianAuth: true,
+      );
+      return res;
+    } on MedCoreApiException catch (e) {
+      _globalErrorBanner = e.toString();
+      rethrow;
+    } finally {
+      _setBusy(false);
+    }
+  }
+
+  /// Changes the authenticated staff member's password and clears forcePasswordChange.
+  Future<void> changeStaffPassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    _setBusy(true);
+    _globalErrorBanner = null;
+    try {
+      await api.postJson(
+        '/api/v1/auth/change-password',
+        {
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+        },
+      );
+      if (_currentUser != null) {
+        _currentUser = _currentUser!.copyWith(forcePasswordChange: false);
+      }
+      notifyListeners();
+    } on MedCoreApiException catch (e) {
+      _globalErrorBanner = e.toString();
+      rethrow;
+    } finally {
+      _setBusy(false);
+    }
+  }
+
+  void setAuthenticatedUserForTesting(AuthenticatedStaffUser? user) {
+    _currentUser = user;
+    notifyListeners();
+  }
+
   List<DesktopRouteEntry> get visibleNavigationRoutes {
     final user = _currentUser;
     if (user == null) return const <DesktopRouteEntry>[];

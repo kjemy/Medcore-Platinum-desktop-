@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/api/medcore_api_client.dart';
 import '../../core/state/medcore_app_controller.dart';
 import '../maintenance/maintenance_center_screen.dart';
@@ -119,13 +121,25 @@ class _TechnicianConsoleScreenState extends State<TechnicianConsoleScreen>
   final TextEditingController _clockTimeRespCtrl = TextEditingController();
   final TextEditingController _clockMaintTokenCtrl = TextEditingController();
 
+  // Tab 8: Initial Hospital Administrator Provisioning & Handover
+  final TextEditingController _adminStaffCodeCtrl = TextEditingController(text: 'ADM-001');
+  final TextEditingController _adminFullNameCtrl = TextEditingController(text: 'Hospital Director');
+  final TextEditingController _adminEmailCtrl = TextEditingController(text: 'admin@hospital.org');
+  final TextEditingController _adminPasswordCtrl = TextEditingController();
+  final TextEditingController _adminPhoneCtrl = TextEditingController();
+  final TextEditingController _adminNationalIdCtrl = TextEditingController();
+  Map<String, dynamic>? _provisionedAdminResult;
+  bool _isLoadingAdminStatus = false;
+  Map<String, dynamic>? _adminStatusData;
+
   String? _statusMessage;
   bool _isError = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
+    _fetchAdminStatus();
     final cfg = widget.controller.facilityConfig;
     final b = cfg.branding;
 
@@ -206,6 +220,12 @@ class _TechnicianConsoleScreenState extends State<TechnicianConsoleScreen>
     _clockChallengeCtrl.dispose();
     _clockTimeRespCtrl.dispose();
     _clockMaintTokenCtrl.dispose();
+    _adminStaffCodeCtrl.dispose();
+    _adminFullNameCtrl.dispose();
+    _adminEmailCtrl.dispose();
+    _adminPasswordCtrl.dispose();
+    _adminPhoneCtrl.dispose();
+    _adminNationalIdCtrl.dispose();
     super.dispose();
   }
 
@@ -415,6 +435,7 @@ class _TechnicianConsoleScreenState extends State<TechnicianConsoleScreen>
                 Tab(text: '5. Network, Backup & Clock Recovery'),
                 Tab(text: '6. Device Pairing Governance'),
                 Tab(text: '7. Maintenance & Backup Runner'),
+                Tab(text: '8. Initial Administrator Handover'),
               ],
             ),
           ),
@@ -430,6 +451,7 @@ class _TechnicianConsoleScreenState extends State<TechnicianConsoleScreen>
                 _buildNetworkBackupClockTab(),
                 NetworkDeviceCenterScreen(controller: widget.controller),
                 MaintenanceCenterScreen(controller: widget.controller),
+                _buildInitialAdminHandoverTab(),
               ],
             ),
           ),
@@ -993,6 +1015,463 @@ class _TechnicianConsoleScreenState extends State<TechnicianConsoleScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _fetchAdminStatus() async {
+    if (!mounted) return;
+    setState(() => _isLoadingAdminStatus = true);
+    try {
+      final res = await widget.controller.getInitialAdminStatus();
+      if (!mounted) return;
+      setState(() {
+        _adminStatusData = res;
+        _isLoadingAdminStatus = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingAdminStatus = false);
+    }
+  }
+
+  void _generateStrongTemporaryPassword() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#%&*';
+    final rand = Random.secure();
+    final pwd = List.generate(14, (_) => chars[rand.nextInt(chars.length)]).join();
+    setState(() {
+      _adminPasswordCtrl.text = 'MedCore-$pwd';
+    });
+  }
+
+  Future<void> _provisionInitialAdministrator() async {
+    setState(() {
+      _statusMessage = null;
+      _isError = false;
+      _provisionedAdminResult = null;
+    });
+
+    final staffCode = _adminStaffCodeCtrl.text.trim();
+    final fullName = _adminFullNameCtrl.text.trim();
+    final email = _adminEmailCtrl.text.trim();
+    final password = _adminPasswordCtrl.text.trim();
+    final phone = _adminPhoneCtrl.text.trim();
+    final nationalId = _adminNationalIdCtrl.text.trim();
+
+    if (staffCode.isEmpty || fullName.isEmpty || email.isEmpty) {
+      setState(() {
+        _statusMessage = 'Staff Code, Full Name, and Email are required.';
+        _isError = true;
+      });
+      return;
+    }
+
+    try {
+      final res = await widget.controller.provisionInitialAdmin(
+        staffCode: staffCode,
+        fullName: fullName,
+        email: email,
+        password: password.isEmpty ? 'MedCore-${Random.secure().nextInt(99999999)}!' : password,
+        phone: phone.isEmpty ? null : phone,
+        nationalId: nationalId.isEmpty ? null : nationalId,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _provisionedAdminResult = res;
+        _statusMessage = 'Hospital Administrator provisioned successfully. Deliver the secure handover slip below.';
+        _isError = false;
+      });
+      await _fetchAdminStatus();
+    } on MedCoreApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = e.toString();
+        _isError = true;
+      });
+    }
+  }
+
+  Widget _buildInitialAdminHandoverTab() {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tech = widget.controller.technicianSession;
+    final hasAdmin = _adminStatusData?['hasAdmin'] == true;
+    final admins = (_adminStatusData?['administrators'] as List?) ?? const [];
+
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        // Governance Notice
+        Card(
+          color: cs.primaryContainer.withOpacity(0.4),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.shield_outlined, color: cs.primary, size: 28),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'SECURE COMMISSIONING & HANDOVER GOVERNANCE (Khaled Constitution)',
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Universal backdoor accounts and hardcoded default passwords have been permanently expunged. '
+                        'As a certified field installation technician, you must provision the facility designated Hospital Administrator '
+                        'inside this authenticated technician session. A single-use temporary password will be generated and printed/copied onto '
+                        'the physical handover certificate. The administrator will be strictly required to establish their private credentials upon first login (force_password_change = true).',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Facility Status Card
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      hasAdmin ? Icons.verified_user : Icons.warning_amber_rounded,
+                      color: hasAdmin ? Colors.teal : Colors.amber.shade800,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        hasAdmin
+                            ? 'Hospital Administrator Already Provisioned (${admins.length} active admin accounts)'
+                            : 'Awaiting Initial Hospital Administrator Provisioning (No Admin Found)',
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    IconButton(
+                      icon: _isLoadingAdminStatus
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.refresh, size: 20),
+                      tooltip: 'Refresh Status',
+                      onPressed: _isLoadingAdminStatus ? null : _fetchAdminStatus,
+                    ),
+                  ],
+                ),
+                if (admins.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: admins.map((a) {
+                      final m = a is Map ? a : const {};
+                      return Chip(
+                        avatar: const Icon(Icons.person, size: 16),
+                        label: Text('${m['fullName']} (${m['staffCode']}) • ${m['email']}'),
+                        backgroundColor: cs.surfaceContainerHighest,
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Provisioning Form
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Provision Administrator Account',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('field_initial_admin_staff_code'),
+                        controller: _adminStaffCodeCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Staff Code *',
+                          hintText: 'e.g. ADM-001',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        key: const Key('field_initial_admin_full_name'),
+                        controller: _adminFullNameCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Full Name *',
+                          hintText: 'e.g. Dr. Jane Smith / General Director',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('field_initial_admin_email'),
+                        controller: _adminEmailCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Official Hospital Email *',
+                          hintText: 'e.g. admin@hospital.org',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TextField(
+                        key: const Key('field_initial_admin_phone'),
+                        controller: _adminPhoneCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Phone Number (Optional)',
+                          hintText: 'e.g. +1 555-0199',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('field_initial_admin_password'),
+                        controller: _adminPasswordCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Temporary Password (leave blank to auto-generate)',
+                          hintText: 'Minimum 8 characters',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    OutlinedButton.icon(
+                      key: const Key('btn_generate_admin_pwd'),
+                      onPressed: _generateStrongTemporaryPassword,
+                      icon: const Icon(Icons.key, size: 18),
+                      label: const Text('Generate Strong Password'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  key: const Key('field_initial_admin_national_id'),
+                  controller: _adminNationalIdCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'National ID / Civil Registration (Optional)',
+                  ),
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  key: const Key('btn_provision_initial_admin'),
+                  onPressed: widget.controller.isBusy ? null : _provisionInitialAdministrator,
+                  icon: const Icon(Icons.person_add_alt_1, size: 20),
+                  label: const Text('Provision Hospital Administrator & Generate Handover Slip'),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        if (_provisionedAdminResult != null) ...[
+          const SizedBox(height: 24),
+          // Handover Slip Card
+          Card(
+            key: const Key('card_handover_slip'),
+            elevation: 4,
+            color: cs.surfaceContainerHigh,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: cs.primary, width: 2),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.workspace_premium, color: cs.primary, size: 32),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'OFFICIAL SECURE COMMISSIONING HANDOVER SLIP',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: cs.primary,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            Text(
+                              'MedCore Platinum Desktop • Local Service Single-Tenant Authority',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        key: const Key('btn_copy_handover_slip'),
+                        icon: const Icon(Icons.copy, size: 16),
+                        label: const Text('Copy Handover Slip'),
+                        onPressed: () {
+                          final slipText = '''
+======================================================================
+           MEDCORE PLATINUM SECURE HANDOVER CERTIFICATE
+======================================================================
+Facility Name:      ${widget.controller.facilityConfig.facilityName}
+Facility Code:      ${widget.controller.facilityConfig.hospitalCode}
+Branch Code:        ${widget.controller.facilityConfig.branchCode}
+Edition:            ${widget.controller.facilityConfig.edition}
+Commissioning Date: ${_provisionedAdminResult?['provisionedAt'] ?? DateTime.now().toUtc().toIso8601String()}
+
+--- ADMINISTRATOR CREDENTIALS ---
+Staff Code:         ${_adminStaffCodeCtrl.text.trim()}
+Full Name:          ${_adminFullNameCtrl.text.trim()}
+Login Identifier:   ${_adminEmailCtrl.text.trim()}
+Temporary Password: ${_provisionedAdminResult?['handoverTemporaryPassword']}
+First Login Action: MANDATORY PASSWORD CHANGE (force_password_change = true)
+
+--- TECHNICIAN COMMISSIONING RECORD ---
+Technician Session: ${tech?.sessionUuid ?? '-'}
+Installation ID:    ${widget.controller.facilityConfig.installationIdentity}
+Service Device:     ${tech?.deviceId ?? '-'}
+
+--- HANDOVER SIGN-OFF ---
+Technician Signature:   ___________________________
+Administrator Receiver: ___________________________
+Date Received:          ___________________________
+======================================================================
+''';
+                          Clipboard.setData(ClipboardData(text: slipText));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Handover slip copied to clipboard.')),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 32),
+                  _buildSlipRow('Facility:', '${widget.controller.facilityConfig.facilityName} (${widget.controller.facilityConfig.hospitalCode})'),
+                  _buildSlipRow('Administrator Name:', _adminFullNameCtrl.text.trim()),
+                  _buildSlipRow('Staff Code:', _adminStaffCodeCtrl.text.trim()),
+                  _buildSlipRow('Login Email:', _adminEmailCtrl.text.trim()),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: cs.outlineVariant),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ONE-TIME TEMPORARY PASSWORD:',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: cs.error,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        SelectableText(
+                          '${_provisionedAdminResult?['handoverTemporaryPassword']}',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Notice: This password is shown only once and will expire upon first successful login, '
+                          'where the administrator will be forced to choose a confidential password.',
+                          style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cs.tertiaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.lock_clock, size: 20, color: cs.primary),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Status: FORCE_PASSWORD_CHANGE = TRUE. The user cannot access clinical or financial records until a new password is set.',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSlipRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 160,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ),
+          Expanded(
+            child: SelectableText(
+              value,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

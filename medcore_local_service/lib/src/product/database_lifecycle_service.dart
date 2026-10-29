@@ -1336,6 +1336,9 @@ RESTORATION INSTRUCTIONS:
     _activeLifecycleOperation = null;
   }
 
+  Future<void> seedBaselineSystemDataForTesting(String hospitalCode) =>
+      _seedBaselineSystemData(hospitalCode);
+
   Future<void> _seedBaselineSystemData(String hospitalCode) async {
     final cleanHosp = hospitalCode.trim();
 
@@ -1369,22 +1372,11 @@ RESTORATION INSTRUCTIONS:
       },
     );
 
-    // 3. Seed Default SuperAdmin Staff Account
-    final defaultPassword = 'AdminPassword#2026';
-    final passwordHash = PasswordHasher.hashPassword(defaultPassword);
-    await db.execute(
-      '''
-      INSERT INTO mc_staff (
-        hospital_code, staff_code, full_name, email, password_hash,
-        role, is_active, created_at
-      ) VALUES (
-        :hosp, 'ADM-001', 'System Administrator', 'admin@medcore.local', :hash,
-        'SuperAdmin', 1, CURRENT_TIMESTAMP
-      )
-      ON DUPLICATE KEY UPDATE is_active = 1
-      ''',
-      {'hosp': cleanHosp, 'hash': passwordHash},
-    );
+    // 3. Initial Administrator Provisioning Invariant:
+    // Zero Universal Hardcoded Credentials. The initial Hospital Administrator account
+    // is NOT seeded with a fixed backdoor password. Instead, it is explicitly provisioned
+    // by the field technician via the authenticated Technician Console session
+    // (/api/v1/technician/initial-admin) with force_password_change = true.
 
     // 4. Seed Server Host Device
     await db.execute(
