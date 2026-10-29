@@ -189,3 +189,22 @@ CREATE TABLE `mc_clinical_templates` (
    - Disabling the `Appointments` module in Tab 2 immediately omits the appointments route from the sidebar and returns `403 MODULE_NOT_ENTITLED` for any call to `POST /api/v1/appointments`.
 3. **Auditability**:
    - Template creations, updates, and usages are recorded in `mc_audit_logs`.
+
+---
+
+## 7. COMMISSIONING STATUS & TRUTH RECONCILIATION
+
+Under the **Khaled Universal Engineering Constitution** (Principle 1: *Reality States Are Not Synonyms*, Principle 3: *No Unearned Acceptance*, Principle 4: *No False PASS*), the product implementation status is precisely classified:
+
+| Component | Status | Reality & Verification |
+|:---|:---:|:---|
+| **Patient Field Profiles (14 fields)** | **100% IMPLEMENTED** | Physically reified in `mc_facility_config.patient_fields_config_json`. Validated on backend and frontend during registration. Verified in automated test suites. |
+| **Facility Module Presets & Toggles** | **100% IMPLEMENTED** | Presets for General Hospital, Specialized Clinic, Dental, Day Surgery. Wire rejection (`403 MODULE_NOT_ENTITLED`) for disabled modules. |
+| **Core Appointment Management** | **100% IMPLEMENTED** | `mc_appointments` table, CRUD endpoints, status state machine (`SCHEDULED`, `CONFIRMED`, `COMPLETED`, `CANCELLED`, `NO_SHOW`), doctor queue integration. |
+| **Clinical Template Relational Schema** | **100% IMPLEMENTED** | `mc_clinical_templates` table migrated and verified in MariaDB 11.4. |
+| **Dynamic Visual Template Editor** | **DEFERRED** | Visual drag-and-drop clinical form designer UI and runtime schema interpreter are deferred to future milestones. |
+| **Dynamic Multi-Resource Slot Engine** | **DEFERRED** | Multi-resource scheduling rules (e.g. surgical theater buffer algorithms) are deferred to future milestones; standard scheduling and queues are active. |
+
+### Final Commissioning Acceptance Classification:
+**PARTIAL (COMMISSIONING ACCEPTED WITH EXPLICIT NON-BLOCKING LIMITATIONS)**
+The core commissioning lifecycle and offline operation are fully functional and ready for production deployment. The deferred dynamic template engines represent post-commissioning enhancements.

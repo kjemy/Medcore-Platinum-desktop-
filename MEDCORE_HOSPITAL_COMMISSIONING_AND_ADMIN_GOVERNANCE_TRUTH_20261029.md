@@ -414,12 +414,31 @@ Actions provided: **Copy Handover Details** & **Print Handover Slip**.
 
 ---
 
-## 14. DEFINITIVE COMMISSIONING ANSWER
+## 14. DEFINITIVE COMMISSIONING ANSWER & RECONCILIATION
 
 ### Primary Question:
 > *"Can Khaled arrive at a completely new hospital, install MedCore offline, configure the facility, select edition/modules/subscription, configure the appropriate patient/booking/workflow template, connect hospital devices, create the Hospital Administrator, securely hand over temporary credentials, have the administrator establish their permanent password, and then have that administrator create and manage the hospital staff with exactly the correct tabs and permissions — with every important state persisted and auditable in MariaDB?"*
 
 ### Authoritative Technical Verdict:
-# **YES.**
+# **PARTIAL (COMMISSIONING ACCEPTED WITH EXPLICIT NON-BLOCKING LIMITATIONS)**
 
-Every step in this pipeline is implemented, physically reified in MariaDB, guarded by fail-closed security, and verified by reproducible automated test suites.
+### Reconciliation & Truth Mapping:
+Under the **Khaled Universal Engineering Constitution** (Principle 1: *Reality States Are Not Synonyms*, Principle 3: *No Unearned Acceptance*, Principle 4: *No False PASS*), declaring an unqualified "YES" while custom template engines remain deferred constitutes unearned acceptance. The system truth is rigorously delineated below:
+
+1. **Fully Operational Commissioning Foundation (100% PASS & ACCEPTED)**:
+   - **Offline Zero-Staff Baseline**: MariaDB 11.4 initializes without backdoor accounts (`admin@medcore.local` and `AdminPassword#2026` permanently eliminated).
+   - **Device & Technician Pairing**: Secure pairing handshake via loopback/LAN (`mc_devices`), protected by runtime secrets and challenges.
+   - **Initial Admin Commissioning**: Provisioned exclusively via `POST /api/v1/technician/initial-admin` with PBKDF2 HMAC-SHA-256 one-way hashing and immutable audit logging in `mc_audit_logs`.
+   - **Secure Handover Slip**: Generated in Technician Console Tab 8, printable/copyable, delivering one-time credentials to hospital leadership.
+   - **Mandatory First-Login Enforcement**: Intercepted by `_ForcePasswordChangeScreen` blocking all desktop navigation until a permanent password is set. Old temporary passwords immediately invalidated.
+   - **Staff & RBAC Lifecycle**: Administrator provisions all 10 canonical roles (`HospitalAdmin`, `Doctor`, `Nurse`, `Receptionist`, `Cashier`, `Pharmacist`, `Lab`, `Radiology`, `Accountant`, `Employee`) with physical row-level persistence in `mc_staff` and strict fail-closed permission enforcement.
+   - **Facility Configuration**: Reified in `mc_facility_config` (edition, subscription start/end, branding, network devices, backup targets).
+   - **Patient Field Profiles**: 14 patient fields dynamically configurable across `REQUIRED`, `OPTIONAL`, and `HIDDEN` with active backend enforcement during patient registration.
+   - **Appointment Management**: Core appointment scheduling, status transitions (`SCHEDULED`, `CONFIRMED`, `COMPLETED`, `CANCELLED`, `NO_SHOW`), and doctor queue integrations operational via `mc_appointments`.
+
+2. **Explicit Non-Blocking Limitations (DEFERRED to Future Releases)**:
+   - **Dynamic Clinical Template Editor**: While the relational schema table `mc_clinical_templates` is physically migrated into MariaDB, the drag-and-drop / visual template builder UI and dynamic form execution engine are **DEFERRED**.
+   - **Dynamic Appointment Slot Rule Engine**: Multi-resource complex slot rules (e.g., dynamic operating room block buffers, alternating specialty time slots) are **DEFERRED**; clinics utilize standard scheduling and doctor queues.
+   - **Cloud Remote Sync**: WordPress/cloud license check is **DEFERRED** in favor of authoritative local MariaDB licensing.
+
+**Conclusion**: The commissioning lifecycle is 100% operational for production deployment, facility configuration, administrator onboarding, role management, patient profiling, and appointment scheduling. The verdict is formally classified as **PARTIAL (COMMISSIONING ACCEPTED WITH EXPLICIT NON-BLOCKING LIMITATIONS)** to truthfully reflect the deferred status of the dynamic template engine.
