@@ -40,7 +40,12 @@ class MedCoreDesktopShell extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.local_hospital, color: cs.primary, size: 26),
+                Image.asset(
+                  'assets/branding/medcore_platinum_logo.png',
+                  height: 32,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(Icons.local_hospital, color: cs.primary, size: 26),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -146,6 +151,17 @@ class MedCoreDesktopShell extends StatelessWidget {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                     children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                        child: Center(
+                          child: Image.asset(
+                            'assets/branding/medcore_platinum_logo.png',
+                            height: 38,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                         child: Text(

@@ -4,9 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       target_ref:
-        description: 'Target release tag or commit SHA to build'
+        description: 'Target release tag, branch, or commit SHA to build'
         required: true
-        default: 'v1.0.0-rc.3'
+        default: 'main'
+      build_type:
+        description: 'Build Type (EVALUATION or RELEASE)'
+        required: true
+        default: 'EVALUATION'
+        type: choice
+        options:
+          - EVALUATION
+          - RELEASE
   push:
     tags:
       - 'v*'
@@ -35,11 +43,16 @@ jobs:
           $expectedCommit = "713a8a4578cb7f82258b57497afa800346280534"
           $checkedOutSha = git rev-parse HEAD
           $targetRef = "${{ github.event.inputs.target_ref || github.ref_name }}"
+          $buildType = "${{ github.event.inputs.build_type }}"
+          if (-not $buildType) {
+            $buildType = "RELEASE"
+          }
           
           Write-Host "============================================================"
           Write-Host "MEDCORE PLATINUM RELEASE SOURCE TRACEABILITY AUDIT"
           Write-Host "============================================================"
           Write-Host "Target Reference    : $targetRef"
+          Write-Host "Build Type          : $buildType"
           Write-Host "Triggered GITHUB_SHA: ${{ github.sha }}"
           Write-Host "Checked-out Commit  : $checkedOutSha"
           Write-Host "Expected RC-3 SHA   : $expectedCommit"
@@ -55,6 +68,7 @@ jobs:
           
           "BUILT_COMMIT=$checkedOutSha" | Out-File -FilePath $env:GITHUB_ENV -Append
           "RELEASE_REF=$targetRef" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "BUILD_TYPE=$buildType" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Setup Flutter Toolchain
         uses: subosito/flutter-action@v2
@@ -83,7 +97,15 @@ jobs:
 
       - name: Build Windows Release Executable
         working-directory: medcore_desktop
-        run: flutter build windows --release
+        shell: pwsh
+        run: |
+          if ($env:BUILD_TYPE -eq "EVALUATION") {
+            Write-Host "Enabling EVALUATION mode: setting MEDCORE_EVALUATION_BUILD=1"
+            $env:MEDCORE_EVALUATION_BUILD = "1"
+          } else {
+            Write-Host "Standard release mode: protected capture (WDA_EXCLUDEFROMCAPTURE)"
+          }
+          flutter build windows --release
 
       - name: Verify Compiled Windows Output
         shell: pwsh
@@ -107,6 +129,7 @@ jobs:
         run: |
           $builtCommit = $env:BUILT_COMMIT
           $releaseRef = $env:RELEASE_REF
+          $buildType = $env:BUILD_TYPE
           $runId = "${{ github.run_id }}"
           $runNumber = "${{ github.run_number }}"
           $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
@@ -115,21 +138,34 @@ jobs:
           $dartLine = (dart --version)
 
           $sourceDir = "medcore_desktop/build/windows/x64/runner/Release"
-          $stagingDir = "package_staging/medcore-platinum-windows-$releaseRef"
+          
+          if ($buildType -eq "EVALUATION") {
+            $artifactBase = "medcore-platinum-windows-v1.0.0-rc.3-evaluation"
+          } else {
+            $artifactBase = "medcore-platinum-windows-$releaseRef"
+          }
+          
+          $stagingDir = "package_staging/$artifactBase"
           New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
           
           Copy-Item -Path "$sourceDir/*" -Destination $stagingDir -Recurse -Force
           
-          $zipName = "medcore-platinum-windows-$releaseRef.zip"
+          $zipName = "$artifactBase.zip"
           Compress-Archive -Path "$stagingDir/*" -DestinationPath $zipName -Force
           
           $zipItem = Get-Item $zipName
           $zipHash = (Get-FileHash -Path $zipName -Algorithm SHA256).Hash
           
+          $screenAffinity = if ($buildType -eq "EVALUATION") { "WDA_NONE (Screen capture permitted for evaluation)" } else { "WDA_EXCLUDEFROMCAPTURE (Screen capture protected)" }
+
           $manifest = [ordered]@{
             "project" = "MedCore Platinum Desktop"
             "release" = $releaseRef
+            "build_type" = $buildType
+            "screen_capture_mode" = $screenAffinity
+            "branding_logo_integrated" = $true
             "application_commit" = $builtCommit
+            "rc3_base_commit" = "713a8a4578cb7f82258b57497afa800346280534"
             "workflow_run_id" = $runId
             "workflow_run_number" = $runNumber
             "workflow_name" = "${{ github.workflow }}"
@@ -145,12 +181,17 @@ jobs:
           $manifestFile = "release_manifest.json"
           [System.IO.File]::WriteAllText($manifestFile, $manifestJson)
           
+          "ARTIFACT_BASE_NAME=$artifactBase" | Out-File -FilePath $env:GITHUB_ENV -Append
+          
           Write-Host "============================================================"
           Write-Host "MEDCORE PLATINUM RELEASE ARTIFACT PACKAGED"
           Write-Host "============================================================"
-          Write-Host "Artifact Name     : $zipName"
+          Write-Host "Artifact Base     : $artifactBase"
+          Write-Host "Artifact File     : $zipName"
           Write-Host "Artifact Size     : $($zipItem.Length) bytes"
           Write-Host "Artifact SHA-256  : $zipHash"
+          Write-Host "Build Type        : $buildType"
+          Write-Host "Screen Capture    : $screenAffinity"
           Write-Host "Application Commit: $builtCommit"
           Write-Host "============================================================"
           Write-Host "Manifest Content:"
@@ -159,7 +200,7 @@ jobs:
       - name: Upload Windows Release Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: medcore-platinum-windows-v1.0.0-rc.3
+          name: ${{ env.ARTIFACT_BASE_NAME }}
           path: |
             medcore-platinum-windows-*.zip
             release_manifest.json

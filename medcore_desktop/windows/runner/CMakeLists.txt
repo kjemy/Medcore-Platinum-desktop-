@@ -30,6 +30,21 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_BUILD=${FLUTT
 # Disable Windows macros that collide with C++ standard library functions.
 target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 
+# Controlled Evaluation Build configuration:
+# When MEDCORE_EVALUATION_BUILD is ON (or environment variable MEDCORE_EVALUATION_BUILD is set to 1),
+# screen capture protection is explicitly disabled for evaluation, demos, and screenshots.
+# In standard / production builds, it defaults to OFF (PROTECTED MODE with WDA_EXCLUDEFROMCAPTURE).
+option(MEDCORE_EVALUATION_BUILD "Enable temporary evaluation mode with screen capture allowed" OFF)
+if(DEFINED ENV{MEDCORE_EVALUATION_BUILD} AND "$ENV{MEDCORE_EVALUATION_BUILD}" STREQUAL "1")
+  set(MEDCORE_EVALUATION_BUILD ON)
+endif()
+
+if(MEDCORE_EVALUATION_BUILD)
+  target_compile_definitions(${BINARY_NAME} PRIVATE "MEDCORE_EVALUATION_MODE=1")
+else()
+  target_compile_definitions(${BINARY_NAME} PRIVATE "MEDCORE_PROTECTED_MODE=1")
+endif()
+
 # Add dependency libraries and include directories. Add any application-specific
 # dependencies here.
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)

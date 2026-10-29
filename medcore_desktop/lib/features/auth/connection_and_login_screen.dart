@@ -395,6 +395,15 @@ class _ConnectionAndLoginScreenState extends State<ConnectionAndLoginScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Image.asset(
+                            'assets/branding/medcore_platinum_logo.png',
+                            height: 52,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          ),
+                        ),
                         Row(
                           children: [
                             Icon(Icons.local_hospital, color: cs.primary, size: 32),

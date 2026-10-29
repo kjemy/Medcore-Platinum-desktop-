@@ -14,13 +14,28 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
 
-  // HIPAA / Medical Privacy: Protect clinical records from unauthorized screen capture
+  // HIPAA / Medical Privacy: Protect clinical records from unauthorized screen capture.
+  // Controlled Evaluation Mode Architecture:
+  // - In EVALUATION MODE: Screen capture protection is explicitly disabled (WDA_NONE) to allow
+  //   authorized evaluation, screenshots, and visual demonstration of UI/UX workflows.
+  // - In PROTECTED MODE (default): WDA_EXCLUDEFROMCAPTURE is strictly enforced to guarantee
+  //   fail-closed privacy protection across all production and standard release builds.
   #ifndef WDA_EXCLUDEFROMCAPTURE
   #define WDA_EXCLUDEFROMCAPTURE 0x00000011
   #endif
+  #ifndef WDA_NONE
+  #define WDA_NONE 0x00000000
+  #endif
+
+  #if defined(MEDCORE_EVALUATION_MODE) && MEDCORE_EVALUATION_MODE
+  // EXPLICIT EVALUATION BUILD: Screen capture protection disabled for evaluation
+  SetWindowDisplayAffinity(GetHandle(), WDA_NONE);
+  #else
+  // PROTECTED PRODUCTION BUILD: Enforce screen capture exclusion
   if (!SetWindowDisplayAffinity(GetHandle(), WDA_EXCLUDEFROMCAPTURE)) {
     SetWindowDisplayAffinity(GetHandle(), WDA_MONITOR);
   }
+  #endif
 
   RECT frame = GetClientArea();
 
