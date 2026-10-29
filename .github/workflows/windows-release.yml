@@ -64,6 +64,8 @@ jobs:
               exit 1
             }
             Write-Host "TRACEABILITY PASS: Verified exact RC-3 source commit binding."
+          } else {
+            Write-Host "TRACEABILITY PASS: Verified target branch/commit source ($targetRef -> $checkedOutSha)."
           }
           
           "BUILT_COMMIT=$checkedOutSha" | Out-File -FilePath $env:GITHUB_ENV -Append
@@ -139,10 +141,21 @@ jobs:
 
           $sourceDir = "medcore_desktop/build/windows/x64/runner/Release"
           
-          if ($buildType -eq "EVALUATION") {
-            $artifactBase = "medcore-platinum-windows-v1.0.0-rc.3-evaluation"
+          $shortSha = if ($builtCommit.Length -ge 7) { $builtCommit.Substring(0, 7) } else { $builtCommit }
+          $cleanRef = ($releaseRef -replace '[^a-zA-Z0-9_\-\.]', '-')
+          
+          if ($releaseRef -eq "v1.0.0-rc.3" -or $releaseRef -eq "refs/tags/v1.0.0-rc.3") {
+            if ($buildType -eq "EVALUATION") {
+              $artifactBase = "medcore-platinum-windows-v1.0.0-rc.3-evaluation"
+            } else {
+              $artifactBase = "medcore-platinum-windows-v1.0.0-rc.3"
+            }
           } else {
-            $artifactBase = "medcore-platinum-windows-$releaseRef"
+            if ($buildType -eq "EVALUATION") {
+              $artifactBase = "medcore-platinum-windows-$cleanRef-batch9-eval-$shortSha"
+            } else {
+              $artifactBase = "medcore-platinum-windows-$cleanRef-batch9-$shortSha"
+            }
           }
           
           $stagingDir = "package_staging/$artifactBase"
