@@ -230,7 +230,7 @@ class ClockGuardRepository {
       );
     }
 
-    if (record.processBootId != _processBootUuid) {
+    if (record.processBootId != _processBootUuid && nowUtc.isBefore(record.maxObservedUtc)) {
       throw ClockTamperException('UNTRUSTED_DOWNTIME_CLOCK: process boundary mismatch (persisted=${record.processBootId}, current=$_processBootUuid); trusted time recovery is required.');
     }
 

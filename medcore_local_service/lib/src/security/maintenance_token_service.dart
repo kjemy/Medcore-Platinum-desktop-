@@ -47,6 +47,12 @@ class MaintenanceTokenService {
       'wNwJHEVkppX9s2OjwXejCIBgVOO+46HHGVh32EZpASzKoQgcefVBoenHv2wHckGItITcB0NdE92uXuC46j6GjyGJP6JO9PrzwvOy+3VabOaiLJghWN88zFOgJniwgi0ALvBjShdCX5COy9Eu5FJt3NY8Ycy9hIHWlmpBZFJRfVpmFy6T8ihH4XJwOt0oAa+B0sqoIiCGGUP7EO0V/fHYj+Z/V57x44ARMB2BUAH7850B4c1ljsKdDyUAAa/BQFWywrnuQezofHcaeX5+v/hGPIISORpJfGx0ftRoMSXJvlmQ/6EQA0gjnQYgOL2WtwdLkYdRtkK1XDwg+EYdKdGH1Q==';
   static const String defaultExponentB64 = 'AQAB';
 
+  static BigInt get defaultModulus => _decodeBase64BigInt(defaultModulusB64);
+  static BigInt get defaultExponent => _decodeBase64BigInt(defaultExponentB64);
+
+  BigInt get authorityModulus => modulus;
+  BigInt get authorityExponent => publicExponent;
+
   MaintenanceTokenService({
     BigInt? modulus,
     BigInt? publicExponent,

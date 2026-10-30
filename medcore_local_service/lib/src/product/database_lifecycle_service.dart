@@ -1380,12 +1380,13 @@ RESTORATION INSTRUCTIONS:
       '''
       INSERT INTO mc_facility_config (
         hospital_code, facility_name, facility_type, edition,
-        installation_identity, enabled_modules_json, patient_fields_config_json,
+        installation_identity, subscription_starts_utc, subscription_expires_utc,
+        enabled_modules_json, patient_fields_config_json,
         branding_appearance_json, network_config_json, backup_config_json,
         remote_hybrid_config_json, created_at, updated_at
       ) VALUES (
         :hosp, 'MedCore Medical Center', 'GENERAL_HOSPITAL', 'PLATINUM',
-        :inst, '{}', '{}', '{}', '{}', '{}', '{}', NOW(), NOW()
+        :inst, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), '{}', '{}', '{}', '{}', '{}', '{}', NOW(), NOW()
       )
       ON DUPLICATE KEY UPDATE facility_name = 'MedCore Medical Center'
       ''',

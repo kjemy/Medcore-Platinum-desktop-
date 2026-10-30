@@ -81,6 +81,21 @@ class TestAuthoritySigner {
     return 'MC_MAINT_V1.$payloadB64.$sigB64';
   }
 
+  String signLicenseLease(Map<String, dynamic> payloadMap) {
+    final canonicalJson = jsonEncode(payloadMap);
+    final payloadB64 = base64UrlEncode(utf8.encode(canonicalJson)).replaceAll('=', '');
+    final signingText = 'MEDCORE_LIC_V1.$payloadB64';
+
+    final k = (modulus.bitLength + 7) ~/ 8;
+    final em = MaintenanceTokenService.encodePkcs1Sha256(utf8.encode(signingText), k);
+    final m = _bytesToBigInt(em);
+    final s = m.modPow(privateExponent, modulus);
+    final sigBytes = _bigIntToBytes(s, k);
+    final sigB64 = base64UrlEncode(sigBytes).replaceAll('=', '');
+
+    return '$signingText.$sigB64';
+  }
+
   String signTimeResponse({
     required String authorityId,
     required String hospitalCode,

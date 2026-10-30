@@ -19,10 +19,18 @@ echo ================================================================
 echo [Stage 1/10] Package root resolved: %PACKAGE_ROOT%
 
 if not defined MEDCORE_DB_USER set MEDCORE_DB_USER=root
-if not defined MEDCORE_DB_PASSWORD set MEDCORE_DB_PASSWORD=MedCoreLocalDb#2026
 if not defined MEDCORE_DB_HOST set MEDCORE_DB_HOST=127.0.0.1
 if not defined MEDCORE_DB_PORT set MEDCORE_DB_PORT=3307
 if not defined MEDCORE_DB_NAME set MEDCORE_DB_NAME=medcore_local
+
+:: Resolve Dynamic Database Password from runtime security store
+if not defined MEDCORE_DB_PASSWORD (
+    if exist "%PACKAGE_ROOT%\runtime\security\db_credentials.json" (
+        for /f "usebackq tokens=*" %%p in (`powershell -NoProfile -Command "(Get-Content '%PACKAGE_ROOT%\runtime\security\db_credentials.json' | ConvertFrom-Json).password"`) do set "MEDCORE_DB_PASSWORD=%%p"
+    ) else if exist "%PACKAGE_ROOT%\service\runtime\security\db_credentials.json" (
+        for /f "usebackq tokens=*" %%p in (`powershell -NoProfile -Command "(Get-Content '%PACKAGE_ROOT%\service\runtime\security\db_credentials.json' | ConvertFrom-Json).password"`) do set "MEDCORE_DB_PASSWORD=%%p"
+    )
+)
 
 :: ================================================================
 :: STAGE 2: Resolve Bundled MariaDB

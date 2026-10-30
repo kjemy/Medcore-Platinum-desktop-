@@ -32,6 +32,9 @@ import '../product/lan_pki_service.dart';
 import '../product/database_lifecycle_service.dart';
 import '../repositories/clinical_template_repository.dart';
 import '../repositories/scheduling_resource_repository.dart';
+import '../security/commercial_entitlement_service.dart';
+import '../security/entitlement_middleware.dart';
+import '../security/hardware_binding_service.dart';
 
 class LocalMedCoreServer {
   final DbClient db;
@@ -71,6 +74,7 @@ class LocalMedCoreServer {
   final String? migrationsDirectoryOverride;
   final bool autoBootstrapCommissioningSecret;
   late final DatabaseLifecycleService databaseLifecycleService;
+  late final CommercialEntitlementService commercialEntitlementService;
   HttpServer? _httpServer;
 
   LocalMedCoreServer(
@@ -86,6 +90,7 @@ class LocalMedCoreServer {
     this.migrationsDirectoryOverride,
     MaintenanceTokenService? maintenanceTokenService,
     TrustedTimeVerifier? trustedTimeVerifier,
+    HardwareBindingService? hardwareBindingService,
   }) {
     txManager = TransactionManager(db);
     authService = AuthService(
@@ -168,6 +173,21 @@ class LocalMedCoreServer {
       encryptionKeyOverride: backupEncryptionKeyOverride,
       securityRootDirectory: securityRootDirectory,
       technicianService: technicianService,
+    );
+
+    final resolvedSecDir = securityRootDirectory ??
+        (Directory('runtime/security').existsSync()
+            ? 'runtime/security'
+            : (Directory('medcore_local_service/runtime/security').existsSync()
+                ? 'medcore_local_service/runtime/security'
+                : 'runtime/security'));
+
+    commercialEntitlementService = CommercialEntitlementService(
+      db: db,
+      securityRootDirectory: resolvedSecDir,
+      hardwareService: hardwareBindingService,
+      authorityModulusOverride: maintenanceTokenService?.authorityModulus,
+      authorityExponentOverride: maintenanceTokenService?.authorityExponent,
     );
   }
 
@@ -3006,7 +3026,42 @@ class LocalMedCoreServer {
       return _jsonOk(res);
     });
 
-    return Pipeline().addMiddleware(_errorAndSecurityMiddleware()).addHandler(router.call);
+    // 25. Commercial Entitlement & License Management (Technician Session ONLY)
+    router.get('/api/v1/technician/license', (Request req) async {
+      final techCtx = await _verifyTechnicianRequest(req);
+      final ent = await commercialEntitlementService.getActiveEntitlement(techCtx.hospitalCode);
+      final hw = await commercialEntitlementService.hardwareService.getHardwareFingerprint();
+      return _jsonOk({
+        'entitlement': ent.toJson(),
+        'hardwareFingerprint': hw,
+      });
+    });
+
+    router.post('/api/v1/technician/license/import', (Request req) async {
+      final techCtx = await _verifyTechnicianRequest(req);
+      final body = await _readJsonBody(req);
+      final rawToken = body['licenseToken']?.toString();
+      if (rawToken == null || rawToken.trim().isEmpty) {
+        return _jsonError(400, 'MISSING_LICENSE_TOKEN', 'licenseToken is required in request body.');
+      }
+      try {
+        final ent = await commercialEntitlementService.importSignedLicense(
+          rawToken,
+          hospitalCode: techCtx.hospitalCode,
+        );
+        return _jsonOk({
+          'status': 'IMPORTED',
+          'entitlement': ent.toJson(),
+        });
+      } on CommercialEntitlementException catch (e) {
+        return _jsonError(e.statusCode, e.code, e.message);
+      }
+    });
+
+    return Pipeline()
+        .addMiddleware(_errorAndSecurityMiddleware())
+        .addMiddleware(EntitlementMiddleware(entitlementService: commercialEntitlementService, db: db).middleware)
+        .addHandler(router.call);
   }
 
   Middleware _errorAndSecurityMiddleware() {

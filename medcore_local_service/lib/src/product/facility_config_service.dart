@@ -302,25 +302,26 @@ class FacilityConfigurationRecord {
     this.updatedAt,
   });
 
+  static DateTime? _parseStrictUtc(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final clean = raw.trim();
+    final isoStr = clean.endsWith('Z') ? clean : '${clean.replaceFirst(' ', 'T')}Z';
+    return DateTime.tryParse(isoStr)?.toUtc();
+  }
+
   bool get isSubscriptionActive {
-    if (subscriptionExpiresUtc == null || subscriptionExpiresUtc!.trim().isEmpty) return true;
-    try {
-      final expiry = DateTime.parse(subscriptionExpiresUtc!.trim()).toUtc();
-      return DateTime.now().toUtc().isBefore(expiry);
-    } catch (_) {
-      return true;
-    }
+    if (subscriptionExpiresUtc == null || subscriptionExpiresUtc!.trim().isEmpty) return false;
+    final expiry = _parseStrictUtc(subscriptionExpiresUtc);
+    if (expiry == null) return false;
+    return DateTime.now().toUtc().isBefore(expiry);
   }
 
   bool get isSubscriptionExpired {
-    if (subscriptionExpiresUtc == null || subscriptionExpiresUtc!.trim().isEmpty) return false;
-    try {
-      final expiry = DateTime.parse(subscriptionExpiresUtc!.trim()).toUtc();
-      // Khaled Fail-Closed Boundary: now >= expiry => expired
-      return !DateTime.now().toUtc().isBefore(expiry);
-    } catch (_) {
-      return false;
-    }
+    if (subscriptionExpiresUtc == null || subscriptionExpiresUtc!.trim().isEmpty) return true;
+    final expiry = _parseStrictUtc(subscriptionExpiresUtc);
+    if (expiry == null) return true;
+    // Khaled Fail-Closed Boundary: now >= expiry => expired
+    return !DateTime.now().toUtc().isBefore(expiry);
   }
 
   bool isModuleEnabled(String moduleName) {

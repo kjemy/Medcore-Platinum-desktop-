@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:medcore_local_service/medcore_local_service.dart';
 import 'package:path/path.dart' as p;
@@ -16,6 +17,11 @@ String _resolveMigrationsDir() {
   final cwdService = p.join(Directory.current.path, 'service', 'sql', 'migrations');
   if (Directory(cwdService).existsSync()) {
     return cwdService;
+  }
+
+  final cwdServicePkg = p.join(Directory.current.path, 'medcore_local_service', 'sql', 'migrations');
+  if (Directory(cwdServicePkg).existsSync()) {
+    return cwdServicePkg;
   }
 
   final exeDir = p.dirname(Platform.resolvedExecutable);
@@ -50,6 +56,26 @@ String _resolveSecurityDir() {
   return p.join(Directory.current.path, 'runtime', 'security');
 }
 
+String _resolveDbPassword(String securityDir) {
+  final envPass = Platform.environment['MEDCORE_DB_PASSWORD']?.trim();
+  if (envPass != null && envPass.isNotEmpty) return envPass;
+
+  final credFile = File(p.join(securityDir, 'db_credentials.json'));
+  if (credFile.existsSync()) {
+    try {
+      final json = jsonDecode(credFile.readAsStringSync()) as Map<String, dynamic>;
+      final pass = json['password']?.toString().trim();
+      if (pass != null && pass.isNotEmpty) return pass;
+    } catch (_) {}
+  }
+
+  throw StateError(
+    'CRITICAL: Dynamic database credential not configured in environment '
+    '(MEDCORE_DB_PASSWORD) or in security file (${credFile.path}). '
+    'Zero static fallback allowed under Khaled Constitution.',
+  );
+}
+
 Future<void> main(List<String> args) async {
   final port = int.tryParse(Platform.environment['MEDCORE_PORT'] ?? '8443') ?? 8443;
   final dbHost = Platform.environment['MEDCORE_DB_HOST'] ?? '127.0.0.1';
@@ -58,9 +84,8 @@ Future<void> main(List<String> args) async {
   final dbUser = Platform.environment['MEDCORE_DB_USER']?.trim().isNotEmpty == true
       ? Platform.environment['MEDCORE_DB_USER']!.trim()
       : 'root';
-  final dbPassword = Platform.environment['MEDCORE_DB_PASSWORD']?.trim().isNotEmpty == true
-      ? Platform.environment['MEDCORE_DB_PASSWORD']!.trim()
-      : 'MedCoreLocalDb#2026';
+  final securityDir = _resolveSecurityDir();
+  final dbPassword = _resolveDbPassword(securityDir);
 
   final config = DbConfig(
     host: dbHost,
@@ -74,7 +99,6 @@ Future<void> main(List<String> args) async {
   final migrationsDir = _resolveMigrationsDir();
   final runner = MigrationRunner(db: db, migrationsDir: migrationsDir);
 
-  final securityDir = _resolveSecurityDir();
   final server = LocalMedCoreServer(
     db,
     securityRootDirectory: securityDir,
@@ -95,9 +119,8 @@ Future<void> main(List<String> args) async {
 
   // Ensure baseline tenant is provisioned if fresh installation
   final tenantResult = await db.execute('SELECT COUNT(*) as cnt FROM mc_tenants');
-  final tenantCnt = tenantResult.rows.isNotEmpty
-      ? (tenantResult.rows.first.assoc()['cnt'] as num?)?.toInt() ?? 0
-      : 0;
+  final rawCnt = tenantResult.rows.isNotEmpty ? tenantResult.rows.first.assoc()['cnt'] : null;
+  final tenantCnt = (rawCnt is num) ? (rawCnt as num).toInt() : (int.tryParse(rawCnt?.toString() ?? '') ?? 0);
   if (tenantCnt == 0) {
     stdout.writeln('[MedCore Local Service] Seeding baseline tenant and device configuration for HOSP_MAIN...');
     await server.databaseLifecycleService.seedBaselineSystemDataForTesting('HOSP_MAIN');

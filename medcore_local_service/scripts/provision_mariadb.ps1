@@ -14,7 +14,63 @@ $ErrorActionPreference = "Stop"
 $dbHost = if ($env:MEDCORE_DB_HOST) { $env:MEDCORE_DB_HOST.Trim() } else { "127.0.0.1" }
 $dbPort = if ($env:MEDCORE_DB_PORT) { [int]$env:MEDCORE_DB_PORT } else { 3307 }
 $dbUser = if ($env:MEDCORE_DB_USER) { $env:MEDCORE_DB_USER.Trim() } else { "root" }
-$dbPassword = if ($env:MEDCORE_DB_PASSWORD) { $env:MEDCORE_DB_PASSWORD.Trim() } else { "MedCoreLocalDb#2026" }
+
+# Dynamic Security & Credential Resolution (Gate 4 - Zero Universal Hardcoded Passwords)
+function Resolve-SecurityDir {
+    if ($env:MEDCORE_SECURITY_DIR -and (Test-Path $env:MEDCORE_SECURITY_DIR)) {
+        return (Resolve-Path $env:MEDCORE_SECURITY_DIR).Path
+    }
+    $candidates = @(
+        (Join-Path $PSScriptRoot "..\runtime\security"),
+        (Join-Path $PSScriptRoot "..\..\runtime\security"),
+        (Join-Path $PSScriptRoot "runtime\security"),
+        (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "runtime\security")
+    )
+    foreach ($c in $candidates) {
+        if (Test-Path $c) {
+            return (Resolve-Path $c).Path
+        }
+    }
+    $defaultSec = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "runtime\security"
+    if (-not (Test-Path $defaultSec)) {
+        New-Item -ItemType Directory -Path $defaultSec -Force | Out-Null
+    }
+    return (Resolve-Path $defaultSec).Path
+}
+
+function Resolve-DynamicDbPassword {
+    param([string]$secDir)
+    if ($env:MEDCORE_DB_PASSWORD -and $env:MEDCORE_DB_PASSWORD.Trim()) {
+        return $env:MEDCORE_DB_PASSWORD.Trim()
+    }
+    $credFile = Join-Path $secDir "db_credentials.json"
+    if (Test-Path $credFile) {
+        try {
+            $json = Get-Content $credFile -Raw | ConvertFrom-Json
+            if ($json.password -and $json.password.Trim()) {
+                return $json.password.Trim()
+            }
+        } catch {}
+    }
+
+    # Generate cryptographically secure random 32-character dynamic password
+    $bytes = New-Object byte[] 24
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    $randPass = [Convert]::ToBase64String($bytes).Replace('+', 'X').Replace('/', 'Y').Replace('=', 'Z')
+
+    $credObj = @{
+        user = "root"
+        password = $randPass
+        generatedAtUtc = [DateTime]::UtcNow.ToString("o")
+        port = 3307
+        host = "127.0.0.1"
+    } | ConvertTo-Json
+    Set-Content -Path $credFile -Value $credObj -Encoding UTF8
+    return $randPass
+}
+
+$securityDir = Resolve-SecurityDir
+$dbPassword = Resolve-DynamicDbPassword -secDir $securityDir
 
 # --------------------------------------------------------------------------------
 # 1. Resolve MariaDB Binaries & Data Directory Dynamically
@@ -246,21 +302,36 @@ if (-not $mariadbClientExe -or -not (Test-Path $mariadbClientExe)) {
 }
 
 # Try connecting with configured password
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
+
 $probeOutput = & $mariadbClientExe -h $dbHost -P $dbPort -u $dbUser "-p$dbPassword" --connect-timeout=5 -e "SELECT VERSION() AS ver, @@port AS port, @@character_set_server AS charset;" 2>&1
 $probeExit = $LASTEXITCODE
 
 if ($probeExit -ne 0) {
-    # If password fails, test if fresh passwordless root is open
-    $noPwOutput = & $mariadbClientExe -h $dbHost -P $dbPort -u $dbUser --connect-timeout=5 -e "SELECT VERSION();" 2>&1
+    # Check if legacy password or passwordless works and migrate to the new dynamic password!
+    $legacyPw = "MedCoreLocalDb#2026"
+    $legacyOutput = & $mariadbClientExe -h $dbHost -P $dbPort -u $dbUser "-p$legacyPw" --connect-timeout=5 -e "SELECT VERSION();" 2>&1
     if ($LASTEXITCODE -eq 0) {
-        # Secure passwordless root with configured application password
-        & $mariadbClientExe -h $dbHost -P $dbPort -u $dbUser -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$dbPassword'; ALTER USER 'root'@'127.0.0.1' IDENTIFIED BY '$dbPassword'; FLUSH PRIVILEGES;" 2>&1 | Out-Null
-        
-        # Re-probe with new password
+        Write-Output "Migrating legacy MariaDB password to secure dynamic per-installation password..."
+        & $mariadbClientExe -h $dbHost -P $dbPort -u $dbUser "-p$legacyPw" -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$dbPassword'; ALTER USER 'root'@'127.0.0.1' IDENTIFIED BY '$dbPassword'; FLUSH PRIVILEGES;" 2>&1 | Out-Null
         $probeOutput = & $mariadbClientExe -h $dbHost -P $dbPort -u $dbUser "-p$dbPassword" --connect-timeout=5 -e "SELECT VERSION() AS ver, @@port AS port, @@character_set_server AS charset;" 2>&1
         $probeExit = $LASTEXITCODE
+    } else {
+        # If password fails, test if fresh passwordless root is open
+        $noPwOutput = & $mariadbClientExe -h $dbHost -P $dbPort -u $dbUser --connect-timeout=5 -e "SELECT VERSION();" 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            # Secure passwordless root with configured application password
+            & $mariadbClientExe -h $dbHost -P $dbPort -u $dbUser -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$dbPassword'; ALTER USER 'root'@'127.0.0.1' IDENTIFIED BY '$dbPassword'; FLUSH PRIVILEGES;" 2>&1 | Out-Null
+            
+            # Re-probe with new password
+            $probeOutput = & $mariadbClientExe -h $dbHost -P $dbPort -u $dbUser "-p$dbPassword" --connect-timeout=5 -e "SELECT VERSION() AS ver, @@port AS port, @@character_set_server AS charset;" 2>&1
+            $probeExit = $LASTEXITCODE
+        }
     }
 }
+
+$ErrorActionPreference = $prevEAP
 
 if ($probeExit -ne 0) {
     Write-Error "CRITICAL: MariaDB client failed to authenticate on $dbHost`:$dbPort for user '$dbUser'. Check credentials."
