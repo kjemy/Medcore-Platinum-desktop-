@@ -302,7 +302,7 @@ class CommercialEntitlementService {
       if (facRows.rows.isNotEmpty) {
         final facRow = facRows.rows.first.assoc();
         final expRaw = facRow['subscription_expires_utc']?.toString();
-        final edition = facRow['edition']?.toString()?.toUpperCase() ?? 'COMMUNITY';
+        final edition = facRow['edition']?.toString().toUpperCase() ?? 'COMMUNITY';
 
         // Attack Invariant: 'ENTERPRISE_UNLIMITED' requires cryptographically signed .mclic license
         if (edition == 'ENTERPRISE_UNLIMITED') {
@@ -318,7 +318,7 @@ class CommercialEntitlementService {
           final expiresAt = DateTime.tryParse(isoExp)?.toUtc();
           if (expiresAt != null) {
             final now = DateTime.now().toUtc();
-            final startsRaw = facRow['subscription_starts_utc']?.toString()?.trim();
+            final startsRaw = facRow['subscription_starts_utc']?.toString().trim();
             final isoStarts = startsRaw != null ? (startsRaw.endsWith('Z') ? startsRaw : '${startsRaw.replaceFirst(' ', 'T')}Z') : null;
             final issuedAt = isoStarts != null ? (DateTime.tryParse(isoStarts)?.toUtc() ?? now) : now;
 
