@@ -396,7 +396,7 @@ jobs:
             "$stagingDir/service/mariadb/bin/mariadb-install-db.exe",
             "$stagingDir/service/mariadb/licenses/COPYING",
             "$stagingDir/service/scripts/provision_mariadb.ps1",
-            "$stagingDir/service/scripts/init_database.bat"
+            "$stagingDir/service/scripts/provision_technician.ps1"
           )
           
           $serverExeFound = (Test-Path "$stagingDir/service/mariadb/bin/mariadbd.exe") -or (Test-Path "$stagingDir/service/mariadb/bin/mysqld.exe")
