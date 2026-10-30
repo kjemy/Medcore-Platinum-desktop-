@@ -70,6 +70,36 @@ void main() {
       hospitalCode: hospitalCodeB,
       name: 'Attacker Facility',
     );
+    await db.execute('''
+      INSERT INTO mc_facility_config (
+        hospital_code, facility_name, facility_type, branch_code, installation_identity,
+        edition, subscription_starts_utc, subscription_expires_utc,
+        enabled_modules_json, patient_fields_config_json, branding_appearance_json,
+        network_config_json, backup_config_json, remote_hybrid_config_json,
+        config_version, updated_at
+      ) VALUES (
+        '$hospitalCode', 'MedCore Engineering Center', 'GENERAL_HOSPITAL', 'MAIN', 'INST-ENG-MAIN',
+        'PLATINUM', NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY),
+        '{}', '{}', '{}',
+        '{}', '{}', '{}',
+        1, NOW()
+      ) ON DUPLICATE KEY UPDATE subscription_expires_utc = VALUES(subscription_expires_utc);
+    ''');
+    await db.execute('''
+      INSERT INTO mc_facility_config (
+        hospital_code, facility_name, facility_type, branch_code, installation_identity,
+        edition, subscription_starts_utc, subscription_expires_utc,
+        enabled_modules_json, patient_fields_config_json, branding_appearance_json,
+        network_config_json, backup_config_json, remote_hybrid_config_json,
+        config_version, updated_at
+      ) VALUES (
+        '$hospitalCodeB', 'Attacker Facility', 'CLINIC', 'MAIN', 'INST-ENG-ATTACK',
+        'PLATINUM', NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY),
+        '{}', '{}', '{}',
+        '{}', '{}', '{}',
+        1, NOW()
+      ) ON DUPLICATE KEY UPDATE subscription_expires_utc = VALUES(subscription_expires_utc);
+    ''');
     await govRepo.enrollOrUpdateDevice(
       hospitalCode: hospitalCode,
       deviceId: deviceId,

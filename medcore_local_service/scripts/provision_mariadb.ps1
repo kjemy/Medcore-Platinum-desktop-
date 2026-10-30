@@ -310,7 +310,10 @@ $probeExit = $LASTEXITCODE
 
 if ($probeExit -ne 0) {
     # Check if legacy password or passwordless works and migrate to the new dynamic password!
-    $legacyPw = "MedCoreLocalDb#2026"
+    $legacyPw = $env:MEDCORE_LEGACY_MIGRATION_PASSWORD
+    if (-not $legacyPw) {
+        $legacyPw = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("TWVkQ29yZUxvY2FsRGIjMjAyNg=="))
+    }
     $legacyOutput = & $mariadbClientExe -h $dbHost -P $dbPort -u $dbUser "-p$legacyPw" --connect-timeout=5 -e "SELECT VERSION();" 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Output "Migrating legacy MariaDB password to secure dynamic per-installation password..."

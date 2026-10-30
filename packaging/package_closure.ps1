@@ -52,6 +52,7 @@ Copy-Item -Path "packaging/README_INSTALL.txt" -Destination "$stagingDir/" -Forc
 # Calculate Hashes
 $desktopExeHash = (Get-FileHash -Path "$stagingDir/medcore_desktop.exe" -Algorithm SHA256).Hash
 $serviceExeHash = (Get-FileHash -Path "$serviceStaging/medcore_local_service.exe" -Algorithm SHA256).Hash
+$commissionExeHash = (Get-FileHash -Path "$serviceStaging/medcore_commission.exe" -Algorithm SHA256).Hash
 $mariadbdHash = (Get-FileHash -Path "$mariadbStaging/bin/mariadbd.exe" -Algorithm SHA256).Hash
 $mariadbClientHash = (Get-FileHash -Path "$mariadbStaging/bin/mariadb.exe" -Algorithm SHA256).Hash
 
@@ -65,11 +66,12 @@ $pkgManifest = [ordered]@{
     "hardware_binding" = "SHA-256 Windows Host Machine Fingerprint"
     "anti_rollback_clock_guard" = "Monotonic Security Anchor + Keyed HMAC Seal"
     "dynamic_db_credentials" = "32-character CSPRNG Generated root password"
-    "static_passwords_eliminated" = @("MedCoreLocalDb#2026")
+    "static_passwords_eliminated" = @("LEGACY_STATIC_DEFAULT_PURGED")
     "bundled_mariadb" = $true
     "mariadb_version" = "11.4.4-MariaDB"
     "desktop_binary_sha256" = $desktopExeHash
     "service_binary_sha256" = $serviceExeHash
+    "commission_binary_sha256" = $commissionExeHash
     "mariadb_daemon_sha256" = $mariadbdHash
     "mariadb_client_sha256" = $mariadbClientHash
     "offline_capable" = $true

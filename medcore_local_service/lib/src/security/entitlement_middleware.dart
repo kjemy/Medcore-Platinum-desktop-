@@ -31,7 +31,7 @@ class EntitlementMiddleware {
           }
 
           // 2. Always allow technician & maintenance operations
-          if (path.startsWith('api/v1/technician/')) {
+          if (path.startsWith('api/v1/technician/') || path.startsWith('api/v1/database/')) {
             return await innerHandler(req);
           }
 
@@ -41,7 +41,12 @@ class EntitlementMiddleware {
           }
 
           // 4. For mutating operations (POST, PUT, DELETE, PATCH), enforce active commercial entitlement
-          final hospitalCode = req.headers['x-tenant-id']?.trim() ?? 'HOSP_MAIN';
+          final rawTenant = req.headers['x-tenant-id']?.trim();
+          if (rawTenant == null || rawTenant.isEmpty) {
+            // Unauthenticated requests missing tenant header are handled fail-closed (401) by authentication layer
+            return await innerHandler(req);
+          }
+          final hospitalCode = rawTenant;
           final entitlement = await entitlementService.getActiveEntitlement(hospitalCode);
 
           if (!entitlement.isMutationAllowed) {
@@ -69,6 +74,7 @@ class EntitlementMiddleware {
             } catch (_) {}
 
             final errPayload = {
+              'ok': false,
               'error': {
                 'code': 'SUBSCRIPTION_EXPIRED',
                 'message': 'Facility commercial entitlement is ${entitlement.status.toWire()}. '
@@ -92,11 +98,11 @@ class EntitlementMiddleware {
 
   bool _isPublicRoute(String path) {
     return path == 'api/v1/health' ||
-        path == 'api/v1/auth/csrf' ||
-        path == 'api/v1/auth/login' ||
-        path == 'api/v1/auth/logout' ||
+        path.startsWith('api/v1/auth/') ||
         path == 'api/v1/facility/config' ||
+        path.startsWith('api/v1/network/pairing/request') ||
         path.startsWith('api/v1/technician/bootstrap') ||
-        path.startsWith('api/v1/technician/login');
+        path.startsWith('api/v1/technician/login') ||
+        path.startsWith('api/v1/technician/session/open');
   }
 }

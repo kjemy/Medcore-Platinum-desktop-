@@ -14,6 +14,19 @@ class HardwareBindingService {
 
   HardwareBindingService({this.overrideFingerprint});
 
+  /// Calculates a deterministic composite fingerprint from hardware component strings
+  static String calculateCompositeFingerprint({
+    String? smbiosUuid,
+    String? motherboardSerial,
+    String? diskSerial,
+  }) {
+    final u = (smbiosUuid ?? 'NO_UUID').trim().toUpperCase();
+    final m = (motherboardSerial ?? 'NO_MB').trim().toUpperCase();
+    final d = (diskSerial ?? 'NO_DISK').trim().toUpperCase();
+    final canonical = '$u:$m:$d';
+    return sha256.convert(utf8.encode(canonical)).toString();
+  }
+
   /// Derives a cryptographically strong 256-bit hardware fingerprint from
   /// Windows physical hardware identifiers:
   /// - SMBIOS System UUID

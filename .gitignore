@@ -2,6 +2,7 @@
 runtime/
 *.zip
 *.tar.gz
+package_staging/
 
 # Dart / Flutter build artifacts
 .dart_tool/

@@ -1,6 +1,30 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:medcore_local_service/medcore_local_service.dart';
 import 'package:path/path.dart' as p;
+
+String _resolveDbPassword(String securityDir) {
+  final envPwd = Platform.environment['MEDCORE_DB_PASSWORD']?.trim();
+  if (envPwd != null && envPwd.isNotEmpty) {
+    return envPwd;
+  }
+
+  final credFile = File(p.join(securityDir, 'db_credentials.json'));
+  if (credFile.existsSync()) {
+    try {
+      final json = jsonDecode(credFile.readAsStringSync()) as Map<String, dynamic>;
+      final pwd = json['password']?.toString().trim();
+      if (pwd != null && pwd.isNotEmpty) {
+        return pwd;
+      }
+    } catch (_) {}
+  }
+
+  throw StateError(
+    'CRITICAL: Dynamic database credential not configured in environment (MEDCORE_DB_PASSWORD) '
+    'or in security file (${credFile.path}). Zero static fallback allowed under Khaled Constitution.',
+  );
+}
 
 String _resolveSecurityDir() {
   final envCustom = Platform.environment['MEDCORE_SECURITY_DIR']?.trim();
@@ -26,8 +50,8 @@ Future<void> main(List<String> args) async {
   final dbPort = int.tryParse(Platform.environment['MEDCORE_DB_PORT'] ?? '3307') ?? 3307;
   final dbName = Platform.environment['MEDCORE_DB_NAME'] ?? 'medcore_local';
   final dbUser = Platform.environment['MEDCORE_DB_USER'] ?? 'root';
-  final dbPassword = Platform.environment['MEDCORE_DB_PASSWORD'] ?? 'MedCoreLocalDb#2026';
   final securityDir = _resolveSecurityDir();
+  final dbPassword = _resolveDbPassword(securityDir);
 
   final config = DbConfig(
     host: dbHost,

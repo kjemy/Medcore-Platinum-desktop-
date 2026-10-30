@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:medcore_local_service/medcore_local_service.dart';
@@ -48,6 +48,25 @@ void main() {
         INSERT INTO mc_tenants (hospital_code, name, status)
         VALUES ('HOSP_EMP', 'Employee Test Hospital', 'active'),
                ('HOSP_OTHER', 'Other Hospital', 'active')
+      ''');
+      await conn.execute('''
+        INSERT IGNORE INTO mc_facility_config (
+          hospital_code, facility_name, facility_type, branch_code, installation_identity,
+          edition, subscription_starts_utc, subscription_expires_utc,
+          enabled_modules_json, patient_fields_config_json, branding_appearance_json,
+          network_config_json, backup_config_json, remote_hybrid_config_json,
+          config_version, created_at, updated_at
+        ) VALUES (
+          'HOSP_EMP', 'Employee Test Hospital', 'GENERAL_HOSPITAL', 'MAIN', 'INST-HOSP-EMP',
+          'PLATINUM', NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY),
+          '{}', '{}', '{}', '{}', '{}', '{}',
+          1, NOW(), NOW()
+        ), (
+          'HOSP_OTHER', 'Other Hospital', 'GENERAL_HOSPITAL', 'MAIN', 'INST-HOSP-OTHER',
+          'PLATINUM', NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY),
+          '{}', '{}', '{}', '{}', '{}', '{}',
+          1, NOW(), NOW()
+        );
       ''');
 
       final govRepo = TenantGovernanceRepository(db);

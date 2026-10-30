@@ -95,6 +95,32 @@ class TenantGovernanceRepository {
         'settings': settings != null ? jsonEncode(settings) : null,
       },
     );
+
+    // Baseline Facility Config Seeding (Gate 10)
+    // Ensures active tenants have an authoritative facility config record
+    try {
+      await db.execute(
+        '''
+        INSERT IGNORE INTO mc_facility_config (
+          hospital_code, facility_name, facility_type, branch_code, installation_identity,
+          edition, subscription_starts_utc, subscription_expires_utc,
+          enabled_modules_json, patient_fields_config_json, branding_appearance_json,
+          network_config_json, backup_config_json, remote_hybrid_config_json,
+          config_version, created_at, updated_at
+        ) VALUES (
+          :code, :name, 'GENERAL_HOSPITAL', 'MAIN', :inst,
+          'PLATINUM', NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY),
+          '{}', '{}', '{}', '{}', '{}', '{}',
+          0, NOW(), NOW()
+        )
+        ''',
+        {
+          'code': hospitalCode,
+          'name': name,
+          'inst': 'INST-$hospitalCode-MAIN',
+        },
+      );
+    } catch (_) {}
   }
 
   Future<Map<String, dynamic>?> findTenant(String hospitalCode) async {

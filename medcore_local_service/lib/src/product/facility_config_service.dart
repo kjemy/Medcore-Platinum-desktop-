@@ -491,6 +491,11 @@ class FacilityConfigService {
       }
     }
 
+    // Finite 30-day evaluation trial for uncommissioned active tenants
+    final nowUtc = DateTime.now().toUtc();
+    subStart ??= nowUtc.toIso8601String();
+    subEnd ??= nowUtc.add(const Duration(days: 30)).toIso8601String();
+
     return FacilityConfigurationRecord(
       hospitalCode: cleanCode,
       facilityName: tenantName,

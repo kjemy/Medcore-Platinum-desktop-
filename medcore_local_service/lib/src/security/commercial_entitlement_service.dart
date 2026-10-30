@@ -101,6 +101,9 @@ class CommercialEntitlement {
 
   bool get isReadOnlyAllowed => isEmergencyReadOnlyPermitted;
 
+  /// Whether software update and maintenance entitlement is currently active
+  bool get isMaintenanceActive => DateTime.now().toUtc().isBefore(maintenanceExpiresAtUtc);
+
   bool isModuleEntitled(String moduleName) => enabledModules[moduleName] ?? false;
 
   Map<String, dynamic> toJson() => {
@@ -271,24 +274,102 @@ class CommercialEntitlementService {
     }
 
     // 2. Fall back to authoritative database cache in mc_license_state
-    final dbRows = await db.execute(
-      'SELECT * FROM mc_license_state WHERE hospital_code = :hosp LIMIT 1',
-      {'hosp': cleanHosp},
-    );
+    try {
+      final dbRows = await db.execute(
+        'SELECT * FROM mc_license_state WHERE hospital_code = :hosp LIMIT 1',
+        {'hosp': cleanHosp},
+      );
 
-    if (dbRows.rows.isNotEmpty) {
-      final row = dbRows.rows.first.assoc();
-      final leaseTokenRaw = row['lease_payload_json']?.toString();
-      if (leaseTokenRaw != null && leaseTokenRaw.startsWith('MEDCORE_LIC_V1.')) {
-        try {
-          final token = SignedLicenseToken.parse(leaseTokenRaw);
-          final entitlement = await _evaluateToken(token, cleanHosp);
-          return entitlement;
-        } catch (_) {}
+      if (dbRows.rows.isNotEmpty) {
+        final row = dbRows.rows.first.assoc();
+        final leaseTokenRaw = row['lease_payload_json']?.toString();
+        if (leaseTokenRaw != null && leaseTokenRaw.startsWith('MEDCORE_LIC_V1.')) {
+          try {
+            final token = SignedLicenseToken.parse(leaseTokenRaw);
+            final entitlement = await _evaluateToken(token, cleanHosp);
+            return entitlement;
+          } catch (_) {}
+        }
       }
-    }
+    } catch (_) {}
 
-    // 3. No valid license -> Return UNLICENSED (fails closed)
+    // 3. Fall back to authoritative database facility configuration (Evaluation / Commissioned tier)
+    try {
+      final facRows = await db.execute(
+        'SELECT subscription_expires_utc, subscription_starts_utc, edition, installation_identity FROM mc_facility_config WHERE hospital_code = :hosp LIMIT 1',
+        {'hosp': cleanHosp},
+      );
+      if (facRows.rows.isNotEmpty) {
+        final facRow = facRows.rows.first.assoc();
+        final expRaw = facRow['subscription_expires_utc']?.toString();
+        final edition = facRow['edition']?.toString()?.toUpperCase() ?? 'COMMUNITY';
+
+        // Attack Invariant: 'ENTERPRISE_UNLIMITED' requires cryptographically signed .mclic license
+        if (edition == 'ENTERPRISE_UNLIMITED') {
+          return CommercialEntitlement.unlicensed(
+            hospitalCode: cleanHosp,
+            reason: 'Enterprise Unlimited tier requires cryptographically signed offline license (.mclic). Direct SQL alteration rejected fail-closed.',
+          );
+        }
+
+        if (expRaw != null && expRaw.trim().isNotEmpty) {
+          final cleanExp = expRaw.trim();
+          final isoExp = cleanExp.endsWith('Z') ? cleanExp : '${cleanExp.replaceFirst(' ', 'T')}Z';
+          final expiresAt = DateTime.tryParse(isoExp)?.toUtc();
+          if (expiresAt != null) {
+            final now = DateTime.now().toUtc();
+            final startsRaw = facRow['subscription_starts_utc']?.toString()?.trim();
+            final isoStarts = startsRaw != null ? (startsRaw.endsWith('Z') ? startsRaw : '${startsRaw.replaceFirst(' ', 'T')}Z') : null;
+            final issuedAt = isoStarts != null ? (DateTime.tryParse(isoStarts)?.toUtc() ?? now) : now;
+
+            // Attack Invariant: Distant perpetual spoofing without signed license is rejected
+            if (expiresAt.year >= 2099) {
+              return CommercialEntitlement.unlicensed(
+                hospitalCode: cleanHosp,
+                reason: 'Perpetual or distant expiration date requires cryptographically signed license. Direct SQL alteration rejected fail-closed.',
+              );
+            }
+
+            final isExpired = !now.isBefore(expiresAt);
+            return CommercialEntitlement(
+              licenseId: 'FACILITY-CONFIG-$cleanHosp',
+              hospitalCode: cleanHosp,
+              installationId: facRow['installation_identity']?.toString() ?? 'INST-$cleanHosp',
+              hardwareFingerprintSha256: 'FACILITY_CONFIG',
+              edition: edition,
+              issuedAtUtc: issuedAt,
+              notBeforeUtc: issuedAt,
+              expiresAtUtc: expiresAt,
+              graceUntilUtc: expiresAt.add(const Duration(days: 14)),
+              maintenanceExpiresAtUtc: expiresAt,
+              enabledModules: const <String, bool>{
+                'Patients': true,
+                'Appointments': true,
+                'Reception': true,
+                'Shifts': true,
+                'Doctors': true,
+                'Nursing': true,
+                'Inpatient': true,
+                'ICU': true,
+                'Surgery': true,
+                'Dialysis': true,
+                'Laboratory': true,
+                'Radiology': true,
+                'Pharmacy': true,
+                'Finance': true,
+                'CommandCenter': true,
+                'HR': true,
+                'AI': true,
+              },
+              status: isExpired ? EntitlementStatus.expiredReadOnly : EntitlementStatus.valid,
+              rejectionReason: isExpired ? 'Facility trial subscription has expired.' : null,
+            );
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 4. No valid license -> Return UNLICENSED (fails closed)
     return CommercialEntitlement.unlicensed(
       hospitalCode: cleanHosp,
       reason: 'No cryptographically valid offline license installed.',
