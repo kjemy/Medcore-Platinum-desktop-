@@ -6,6 +6,7 @@
 # 2. Dynamic binary and data path resolution (no hardcoded developer paths).
 # 3. Secure authentication (no passwordless assumption; verify configured credentials).
 # 4. Strict fail-closed error handling (exit non-zero on any verification failure).
+# 5. Local isolation (127.0.0.1 binding only, no external network exposure).
 # ================================================================================
 
 $ErrorActionPreference = "Stop"
@@ -16,49 +17,58 @@ $dbUser = if ($env:MEDCORE_DB_USER) { $env:MEDCORE_DB_USER.Trim() } else { "root
 $dbPassword = if ($env:MEDCORE_DB_PASSWORD) { $env:MEDCORE_DB_PASSWORD.Trim() } else { "MedCoreLocalDb#2026" }
 
 # --------------------------------------------------------------------------------
-# 1. Resolve MariaDB Binaries & Data Directory
+# 1. Resolve MariaDB Binaries & Data Directory Dynamically
 # --------------------------------------------------------------------------------
 function Resolve-MariaDBBinDir {
-    # 1. Environment overrides
-    if ($env:MARIADB_HOME -and (Test-Path (Join-Path $env:MARIADB_HOME "bin\mariadb.exe"))) {
-        return (Join-Path $env:MARIADB_HOME "bin")
+    # 1. Explicit environment overrides
+    if ($env:MEDCORE_MARIADB_BIN -and (Test-Path (Join-Path $env:MEDCORE_MARIADB_BIN "mariadbd.exe"))) {
+        return (Resolve-Path $env:MEDCORE_MARIADB_BIN).Path
     }
-    if ($env:MEDCORE_RUNTIME_DIR -and (Test-Path (Join-Path $env:MEDCORE_RUNTIME_DIR "mariadb\bin\mariadb.exe"))) {
-        return (Join-Path $env:MEDCORE_RUNTIME_DIR "mariadb\bin")
+    if ($env:MARIADB_HOME -and (Test-Path (Join-Path $env:MARIADB_HOME "bin\mariadbd.exe"))) {
+        return (Resolve-Path (Join-Path $env:MARIADB_HOME "bin")).Path
+    }
+    if ($env:MEDCORE_RUNTIME_DIR -and (Test-Path (Join-Path $env:MEDCORE_RUNTIME_DIR "mariadb\bin\mariadbd.exe"))) {
+        return (Resolve-Path (Join-Path $env:MEDCORE_RUNTIME_DIR "mariadb\bin")).Path
     }
 
-    # 2. Relative search from script directory
+    # 2. Package relative resolution from script directory ($PSScriptRoot)
     $scriptRoot = $PSScriptRoot
     $candidates = @(
-        (Join-Path $scriptRoot "..\..\runtime\mariadb\bin"),
+        (Join-Path $scriptRoot "..\mariadb\bin"),                  # <pkg>/service/mariadb/bin
+        (Join-Path $scriptRoot "..\..\service\mariadb\bin"),       # from nested scripts
+        (Join-Path $scriptRoot "..\..\mariadb\bin"),               # <pkg>/mariadb/bin
+        (Join-Path $scriptRoot "..\..\runtime\mariadb\bin"),       # <repo>/runtime/mariadb/bin
         (Join-Path $scriptRoot "..\runtime\mariadb\bin"),
         (Join-Path $scriptRoot "runtime\mariadb\bin"),
-        (Join-Path $scriptRoot "..\..\mariadb\bin"),
         (Join-Path $scriptRoot "mariadb\bin")
     )
     foreach ($cand in $candidates) {
+        if (Test-Path (Join-Path $cand "mariadbd.exe")) {
+            return (Resolve-Path $cand).Path
+        }
+        if (Test-Path (Join-Path $cand "mysqld.exe")) {
+            return (Resolve-Path $cand).Path
+        }
         if (Test-Path (Join-Path $cand "mariadb.exe")) {
             return (Resolve-Path $cand).Path
         }
     }
 
-    # 3. Standard Windows Installation Paths
+    # 3. Standard Windows Installation Paths (fallback only)
     $stdPaths = Get-ChildItem "C:\Program Files\MariaDB*" -Directory -ErrorAction SilentlyContinue | ForEach-Object { Join-Path $_.FullName "bin" }
     foreach ($p in $stdPaths) {
-        if (Test-Path (Join-Path $p "mariadb.exe")) {
+        if (Test-Path (Join-Path $p "mariadbd.exe") -or Test-Path (Join-Path $p "mariadb.exe")) {
             return (Resolve-Path $p).Path
         }
     }
 
     # 4. PATH lookup
-    $cmd = Get-Command mariadb.exe -ErrorAction SilentlyContinue
+    $cmd = Get-Command mariadbd.exe -ErrorAction SilentlyContinue
+    if (-not $cmd) {
+        $cmd = Get-Command mariadb.exe -ErrorAction SilentlyContinue
+    }
     if ($cmd) {
         return (Split-Path -Parent $cmd.Source)
-    }
-
-    # 5. Developer host fallback
-    if (Test-Path "C:\Users\hp\Desktop\project 4\runtime\mariadb\bin\mariadb.exe") {
-        return "C:\Users\hp\Desktop\project 4\runtime\mariadb\bin"
     }
 
     return $null
@@ -67,42 +77,79 @@ function Resolve-MariaDBBinDir {
 function Resolve-MariaDBDataDir {
     param([string]$binDir)
 
+    if ($env:MEDCORE_DATA_DIR) {
+        return (Resolve-Path $env:MEDCORE_DATA_DIR).Path
+    }
+
+    $scriptRoot = $PSScriptRoot
+
+    # 1. Check relative to binary location
     if ($binDir) {
         $parent = Split-Path -Parent $binDir
-        $siblingData = Join-Path (Split-Path -Parent $parent) "mariadb_data"
-        if (Test-Path $siblingData) {
-            return (Resolve-Path $siblingData).Path
+        $serviceOrPkg = Split-Path -Parent $parent
+        $pkgRoot = Split-Path -Parent $serviceOrPkg
+
+        $cands = @(
+            (Join-Path $pkgRoot "runtime\mariadb_data"),
+            (Join-Path $serviceOrPkg "runtime\mariadb_data"),
+            (Join-Path $pkgRoot "mariadb_data"),
+            (Join-Path $parent "data")
+        )
+        foreach ($c in $cands) {
+            if (Test-Path $c) {
+                return (Resolve-Path $c).Path
+            }
         }
-        $directData = Join-Path $parent "data"
-        if (Test-Path $directData) {
-            return (Resolve-Path $directData).Path
-        }
     }
 
-    # Relative to script
-    $cand = Join-Path $PSScriptRoot "..\..\runtime\mariadb_data"
-    if (Test-Path $cand) {
-        return (Resolve-Path $cand).Path
+    # 2. Check relative to script directory
+    $repoData = Join-Path $scriptRoot "..\..\runtime\mariadb_data"
+    if (Test-Path $repoData) {
+        return (Resolve-Path $repoData).Path
     }
 
-    $cand2 = Join-Path $PSScriptRoot "..\runtime\mariadb_data"
-    if (Test-Path $cand2) {
-        return (Resolve-Path $cand2).Path
+    $svcData = Join-Path $scriptRoot "..\runtime\mariadb_data"
+    if (Test-Path $svcData) {
+        return (Resolve-Path $svcData).Path
     }
 
-    # Default location next to runtime or script
-    if ($binDir) {
-        return (Join-Path (Split-Path -Parent (Split-Path -Parent $binDir)) "mariadb_data")
-    }
-    return (Join-Path $PSScriptRoot "..\mariadb_data")
+    # 3. Default to package root / runtime / mariadb_data
+    $pkgDefault = Join-Path (Split-Path -Parent (Split-Path -Parent $scriptRoot)) "runtime\mariadb_data"
+    return $pkgDefault
 }
 
 $mariaBin = Resolve-MariaDBBinDir
 $dataDir = Resolve-MariaDBDataDir -binDir $mariaBin
 
-$installDbExe = if ($mariaBin) { Join-Path $mariaBin "mariadb-install-db.exe" } else { $null }
-$mariadbdExe = if ($mariaBin) { Join-Path $mariaBin "mariadbd.exe" } else { $null }
-$mariadbClientExe = if ($mariaBin) { Join-Path $mariaBin "mariadb.exe" } else { $null }
+$installDbExe = if ($mariaBin) {
+    if (Test-Path (Join-Path $mariaBin "mariadb-install-db.exe")) {
+        Join-Path $mariaBin "mariadb-install-db.exe"
+    } elseif (Test-Path (Join-Path $mariaBin "mysql_install_db.exe")) {
+        Join-Path $mariaBin "mysql_install_db.exe"
+    } else {
+        $null
+    }
+} else { $null }
+
+$mariadbdExe = if ($mariaBin) {
+    if (Test-Path (Join-Path $mariaBin "mariadbd.exe")) {
+        Join-Path $mariaBin "mariadbd.exe"
+    } elseif (Test-Path (Join-Path $mariaBin "mysqld.exe")) {
+        Join-Path $mariaBin "mysqld.exe"
+    } else {
+        $null
+    }
+} else { $null }
+
+$mariadbClientExe = if ($mariaBin) {
+    if (Test-Path (Join-Path $mariaBin "mariadb.exe")) {
+        Join-Path $mariaBin "mariadb.exe"
+    } elseif (Test-Path (Join-Path $mariaBin "mysql.exe")) {
+        Join-Path $mariaBin "mysql.exe"
+    } else {
+        $null
+    }
+} else { $null }
 
 # --------------------------------------------------------------------------------
 # 2. Check / Initialize & Start MariaDB Daemon
@@ -111,18 +158,20 @@ $listening = Get-NetTCPConnection -LocalPort $dbPort -State Listen -ErrorAction 
 
 if (-not $listening) {
     if (-not $mariadbdExe -or -not (Test-Path $mariadbdExe)) {
-        Write-Error "CRITICAL: MariaDB is not listening on port $dbPort, and mariadbd.exe was not found."
+        Write-Error "CRITICAL: MariaDB is not listening on port $dbPort, and mariadbd.exe/mysqld.exe was not found in: $mariaBin"
         exit 1
     }
 
     $myIniPath = Join-Path $dataDir "my.ini"
+    $normalizedDataDir = $dataDir -replace '\\', '/'
+
     if (-not (Test-Path $myIniPath)) {
         if (-not (Test-Path $dataDir)) {
             New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
         }
         if ($installDbExe -and (Test-Path $installDbExe)) {
             Write-Output "Initializing MariaDB 11.4 data directory at $dataDir on port $dbPort..."
-            & $installDbExe --datadir="$dataDir" --port=$dbPort --default-user 2>&1 | Out-Null
+            & $installDbExe --datadir="$dataDir" --port=$dbPort --password="$dbPassword" --default-user 2>&1 | Out-Null
             if ($LASTEXITCODE -ne 0) {
                 Write-Error "CRITICAL: mariadb-install-db failed with exit code $LASTEXITCODE."
                 exit 1
@@ -130,8 +179,20 @@ if (-not $listening) {
         }
     }
 
-    # Ensure my.ini configuration
-    if (Test-Path $myIniPath) {
+    # Ensure my.ini configuration exists and enforces strict local isolation
+    if (-not (Test-Path $myIniPath)) {
+        $defaultIni = @"
+[mysqld]
+datadir=$normalizedDataDir
+bind-address=$dbHost
+port=$dbPort
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
+innodb_strict_mode=ON
+max_connections=150
+"@
+        Set-Content -Path $myIniPath -Value $defaultIni -Encoding UTF8
+    } else {
         $iniContent = Get-Content $myIniPath -Raw -ErrorAction SilentlyContinue
         if ($iniContent -notmatch "bind-address") {
             $extraIni = @"
@@ -147,7 +208,7 @@ max_connections=150
         }
     }
 
-    Write-Output "Starting mariadbd.exe daemon on $dbHost`:$dbPort..."
+    Write-Output "Starting MariaDB daemon on $dbHost`:$dbPort..."
     Start-Process -FilePath $mariadbdExe -ArgumentList "--defaults-file=`"$myIniPath`"" -WindowStyle Hidden
     
     # Poll for port listening
@@ -162,7 +223,7 @@ max_connections=150
     }
 
     if (-not $started) {
-        Write-Error "CRITICAL: mariadbd.exe was started but port $dbPort is not listening after 15 seconds."
+        Write-Error "CRITICAL: MariaDB was started but port $dbPort is not listening after 15 seconds."
         exit 1
     }
 }

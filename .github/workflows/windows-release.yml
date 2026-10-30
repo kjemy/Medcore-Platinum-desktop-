@@ -154,6 +154,38 @@ jobs:
           Write-Host "Service SHA : $serviceHash"
           Write-Host "============================================================"
 
+      - name: Download & Extract Bundled MariaDB 11.4 Win64
+        shell: pwsh
+        run: |
+          Write-Host "============================================================"
+          Write-Host "PREPARING BUNDLED MARIADB 11.4.4 WIN64"
+          Write-Host "============================================================"
+          $mariadbUrl = "https://archive.mariadb.org/mariadb-11.4.4/winx64-packages/mariadb-11.4.4-winx64.zip"
+          $zipPath = "mariadb-11.4.4-winx64.zip"
+          $extractDir = "mariadb_extracted"
+          
+          Write-Host "Downloading MariaDB archive from $mariadbUrl ..."
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
+          Invoke-WebRequest -Uri $mariadbUrl -OutFile $zipPath -UseBasicParsing
+          
+          $downloadItem = Get-Item $zipPath
+          $downloadHash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash
+          Write-Host "Downloaded Archive Size : $($downloadItem.Length) bytes"
+          Write-Host "Downloaded Archive Hash : $downloadHash"
+          
+          Write-Host "Extracting MariaDB distribution archive..."
+          Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
+          
+          $extractedRoot = Get-ChildItem -Path $extractDir | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+          if (-not $extractedRoot) {
+            Write-Error "CRITICAL: Could not find extracted MariaDB directory in $extractDir"
+            exit 1
+          }
+          Write-Host "Extracted MariaDB Directory: $($extractedRoot.FullName)"
+          
+          "MARIADB_EXTRACTED_ROOT=$($extractedRoot.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "MARIADB_ARCHIVE_SHA256=$downloadHash" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Package Release Bundle & Generate Manifest
         shell: pwsh
         run: |
@@ -174,15 +206,15 @@ jobs:
           
           if ($releaseRef -eq "v1.0.0-rc.3" -or $releaseRef -eq "refs/tags/v1.0.0-rc.3") {
             if ($buildType -eq "EVALUATION") {
-              $artifactBase = "medcore-platinum-windows-v1.0.0-rc.3-evaluation"
+              $artifactBase = "medcore-platinum-windows-v1.0.0-rc.3-self-contained-evaluation"
             } else {
-              $artifactBase = "medcore-platinum-windows-v1.0.0-rc.3"
+              $artifactBase = "medcore-platinum-windows-v1.0.0-rc.3-self-contained"
             }
           } else {
             if ($buildType -eq "EVALUATION") {
-              $artifactBase = "medcore-platinum-windows-$cleanRef-final-eval-$shortSha"
+              $artifactBase = "medcore-platinum-windows-$cleanRef-self-contained-eval-$shortSha"
             } else {
-              $artifactBase = "medcore-platinum-windows-$cleanRef-final-$shortSha"
+              $artifactBase = "medcore-platinum-windows-$cleanRef-self-contained-$shortSha"
             }
           }
           
@@ -202,16 +234,63 @@ jobs:
           Copy-Item -Path "medcore_local_service/build/bin/medcore_commission.exe" -Destination "$serviceStaging/" -Force
           Copy-Item -Path "medcore_local_service/sql/migrations/*" -Destination "$serviceStaging/sql/migrations/" -Force
           Copy-Item -Path "medcore_local_service/scripts/*" -Destination "$serviceStaging/scripts/" -Force
-          
-          # 3. Packaging Helpers & Documentation
+
+          # 3. Bundled MariaDB 11.4 Distribution & Licenses
+          $mariadbStaging = "$serviceStaging/mariadb"
+          New-Item -ItemType Directory -Path "$mariadbStaging/licenses" -Force | Out-Null
+          $mariadbSource = $env:MARIADB_EXTRACTED_ROOT
+          Write-Host "Copying MariaDB components from $mariadbSource to $mariadbStaging ..."
+          Copy-Item -Path "$mariadbSource/bin" -Destination "$mariadbStaging/bin" -Recurse -Force
+          Copy-Item -Path "$mariadbSource/lib" -Destination "$mariadbStaging/lib" -Recurse -Force
+          Copy-Item -Path "$mariadbSource/share" -Destination "$mariadbStaging/share" -Recurse -Force
+
+          # License and notices (GPLv2 compliance)
+          Copy-Item -Path "$mariadbSource/COPYING" -Destination "$mariadbStaging/licenses/COPYING" -Force
+          Copy-Item -Path "$mariadbSource/CREDITS" -Destination "$mariadbStaging/licenses/CREDITS" -Force
+          Copy-Item -Path "$mariadbSource/README.md" -Destination "$mariadbStaging/licenses/README.md" -Force
+          Copy-Item -Path "$mariadbSource/THIRDPARTY" -Destination "$mariadbStaging/licenses/THIRDPARTY" -Force
+          Copy-Item -Path "$mariadbSource/COPYING" -Destination "$mariadbStaging/COPYING" -Force
+          Copy-Item -Path "$mariadbSource/CREDITS" -Destination "$mariadbStaging/CREDITS" -Force
+          Copy-Item -Path "$mariadbSource/README.md" -Destination "$mariadbStaging/README.md" -Force
+          Copy-Item -Path "$mariadbSource/THIRDPARTY" -Destination "$mariadbStaging/THIRDPARTY" -Force
+
+          # 4. Packaging Helpers, Documentation & Runtime Directories
+          New-Item -ItemType Directory -Path "$stagingDir/packaging" -Force | Out-Null
+          New-Item -ItemType Directory -Path "$stagingDir/runtime/mariadb_data" -Force | Out-Null
+          New-Item -ItemType Directory -Path "$stagingDir/runtime/security" -Force | Out-Null
+
           Copy-Item -Path "packaging/start_medcore_system.bat" -Destination "$stagingDir/" -Force
           Copy-Item -Path "packaging/commission_technician.bat" -Destination "$stagingDir/" -Force
+          Copy-Item -Path "packaging/start_medcore_system.bat" -Destination "$stagingDir/packaging/" -Force
+          Copy-Item -Path "packaging/commission_technician.bat" -Destination "$stagingDir/packaging/" -Force
           Copy-Item -Path "packaging/README_INSTALL.txt" -Destination "$stagingDir/" -Force
+
+          $mariadbdExe = "$mariadbStaging/bin/mariadbd.exe"
+          if (-not (Test-Path $mariadbdExe)) { $mariadbdExe = "$mariadbStaging/bin/mysqld.exe" }
+          $mariadbClientExe = "$mariadbStaging/bin/mariadb.exe"
+          if (-not (Test-Path $mariadbClientExe)) { $mariadbClientExe = "$mariadbStaging/bin/mysql.exe" }
+          $mariadbInstallExe = "$mariadbStaging/bin/mariadb-install-db.exe"
+
+          $mariadbdHash = (Get-FileHash -Path $mariadbdExe -Algorithm SHA256).Hash
+          $mariadbClientHash = (Get-FileHash -Path $mariadbClientExe -Algorithm SHA256).Hash
+          $mariadbInstallHash = if (Test-Path $mariadbInstallExe) { (Get-FileHash -Path $mariadbInstallExe -Algorithm SHA256).Hash } else { "N/A" }
 
           $pkgManifest = [ordered]@{
             "project" = "MedCore Platinum Desktop"
             "release" = $releaseRef
             "build_type" = $buildType
+            "package_classification" = "B) Desktop + Local Service + Bundled MariaDB 11.4 Self-Contained Offline Hospital Distribution Package"
+            "bundled_mariadb" = $true
+            "mariadb_version" = "11.4.4-MariaDB"
+            "mariadb_distribution_source" = "archive.mariadb.org (Win64)"
+            "mariadb_license" = "GNU General Public License v2 (GPLv2)"
+            "mariadb_license_notice" = "MariaDB is free software under GNU GPLv2. Licenses and notices bundled in service/mariadb/licenses/."
+            "mariadb_source_url" = "https://archive.mariadb.org/mariadb-11.4.4/source/"
+            "mariadb_binary_sha256" = $mariadbdHash
+            "mariadb_client_sha256" = $mariadbClientHash
+            "mariadb_install_sha256" = $mariadbInstallHash
+            "offline_capable" = $true
+            "network_isolation_guarantee" = "Service and MariaDB bind strictly to loopback 127.0.0.1; zero external internet connection required."
             "application_commit" = $builtCommit
             "rc3_base_commit" = "713a8a4578cb7f82258b57497afa800346280534"
             "workflow_run_id" = $runId
@@ -232,9 +311,20 @@ jobs:
             "project" = "MedCore Platinum Desktop"
             "release" = $releaseRef
             "build_type" = $buildType
-            "package_classification" = "B) Desktop + Local Service Self-Contained Distribution Package"
+            "package_classification" = "B) Desktop + Local Service + Bundled MariaDB 11.4 Self-Contained Offline Hospital Distribution Package"
             "screen_capture_mode" = $screenAffinity
             "branding_logo_integrated" = $true
+            "bundled_mariadb" = $true
+            "mariadb_version" = "11.4.4-MariaDB"
+            "mariadb_distribution_source" = "archive.mariadb.org (Win64)"
+            "mariadb_license" = "GNU General Public License v2 (GPLv2)"
+            "mariadb_license_notice" = "MariaDB is free software under GNU GPLv2. Licenses and notices bundled in service/mariadb/licenses/."
+            "mariadb_source_url" = "https://archive.mariadb.org/mariadb-11.4.4/source/"
+            "mariadb_binary_sha256" = $mariadbdHash
+            "mariadb_client_sha256" = $mariadbClientHash
+            "mariadb_install_sha256" = $mariadbInstallHash
+            "offline_capable" = $true
+            "network_isolation_guarantee" = "Service and MariaDB bind strictly to loopback 127.0.0.1; zero external internet connection required."
             "application_commit" = $builtCommit
             "rc3_base_commit" = "713a8a4578cb7f82258b57497afa800346280534"
             "workflow_run_id" = $runId
@@ -252,9 +342,11 @@ jobs:
               "data/ (Flutter Assets)",
               "service/medcore_local_service.exe (Compiled Standalone Local Service)",
               "service/medcore_commission.exe (Field Technician CLI)",
-              "service/sql/migrations/ (17 Schema Migrations)",
+              "service/mariadb/ (Bundled MariaDB 11.4.4 Win64 Server, Client & Tools)",
+              "service/mariadb/licenses/ (MariaDB GPLv2 License, Credits, Notices)",
+              "service/sql/migrations/ (17 Schema Migrations V001..V017)",
               "service/scripts/ (MariaDB & Technician Provisioning Scripts)",
-              "start_medcore_system.bat (One-Click System Launcher)",
+              "start_medcore_system.bat (One-Click 10-Stage System Launcher)",
               "commission_technician.bat (Commissioning Shortcut)",
               "README_INSTALL.txt"
             )
@@ -275,10 +367,60 @@ jobs:
           Write-Host "Artifact SHA-256  : $zipHash"
           Write-Host "Build Type        : $buildType"
           Write-Host "Screen Capture    : $screenAffinity"
+          Write-Host "Bundled MariaDB   : Enabled ($mariadbdHash)"
           Write-Host "Application Commit: $builtCommit"
           Write-Host "============================================================"
           Write-Host "Manifest Content:"
           Write-Host $manifestJson
+
+      - name: Verify Self-Contained Package Integrity
+        shell: pwsh
+        run: |
+          $artifactBase = $env:ARTIFACT_BASE_NAME
+          $stagingDir = "package_staging/$artifactBase"
+          Write-Host "============================================================"
+          Write-Host "VERIFYING SELF-CONTAINED PACKAGE INTEGRITY"
+          Write-Host "Target Staging: $stagingDir"
+          Write-Host "============================================================"
+          
+          $criticalFiles = @(
+            "$stagingDir/medcore_desktop.exe",
+            "$stagingDir/flutter_windows.dll",
+            "$stagingDir/start_medcore_system.bat",
+            "$stagingDir/commission_technician.bat",
+            "$stagingDir/README_INSTALL.txt",
+            "$stagingDir/release_manifest.json",
+            "$stagingDir/service/medcore_local_service.exe",
+            "$stagingDir/service/medcore_commission.exe",
+            "$stagingDir/service/mariadb/bin/mariadb.exe",
+            "$stagingDir/service/mariadb/bin/mariadb-install-db.exe",
+            "$stagingDir/service/mariadb/licenses/COPYING",
+            "$stagingDir/service/scripts/provision_mariadb.ps1",
+            "$stagingDir/service/scripts/init_database.bat"
+          )
+          
+          $serverExeFound = (Test-Path "$stagingDir/service/mariadb/bin/mariadbd.exe") -or (Test-Path "$stagingDir/service/mariadb/bin/mysqld.exe")
+          if (-not $serverExeFound) {
+            Write-Error "CRITICAL: MariaDB server executable (mariadbd.exe or mysqld.exe) missing!"
+            exit 1
+          }
+          
+          foreach ($f in $criticalFiles) {
+            if (-not (Test-Path $f)) {
+              Write-Error "CRITICAL: Missing required package file: $f"
+              exit 1
+            }
+          }
+          
+          # Verify all 17 migrations exist
+          $migrations = Get-ChildItem -Path "$stagingDir/service/sql/migrations" -Filter "*.sql"
+          Write-Host "Verified $($migrations.Count) SQL migration files (V001..V017)."
+          if ($migrations.Count -lt 17) {
+            Write-Error "CRITICAL: Expected 17 migrations in staging, found $($migrations.Count)!"
+            exit 1
+          }
+          
+          Write-Host "INTEGRITY CHECK PASSED: All bundled server, client, migrations, and licenses verified."
 
       - name: Upload Windows Release Artifact
         uses: actions/upload-artifact@v4
