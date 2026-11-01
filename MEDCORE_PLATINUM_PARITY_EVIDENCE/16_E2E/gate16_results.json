@@ -1,0 +1,93 @@
+{
+  "gate": "GATE_16_E2E_INTEGRATION_AND_DATA_INTEGRITY",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:27:55Z",
+  "summary": {
+    "desktop_tests_total": 54,
+    "desktop_tests_passed": 54,
+    "backend_tests_total": 12,
+    "backend_tests_passed": 12,
+    "e2e_chains_verified": 11,
+    "data_loss_detected": 0,
+    "cross_tenant_leakage": 0
+  },
+  "verified_chains": [
+    {
+      "domain": "Master Definitions",
+      "ui_trigger": "DefinitionsWorkspaceScreen",
+      "endpoint": "/api/v1/definitions/:type",
+      "db_target": "mc_definitions",
+      "status": "PASS"
+    },
+    {
+      "domain": "Temporary Emergency Clinics",
+      "ui_trigger": "shifts_and_visits_screen._showCreateTemporaryClinicDialog",
+      "endpoint": "POST /api/v1/definitions/clinics",
+      "db_target": "mc_definitions (temporary_clinic=true)",
+      "status": "PASS"
+    },
+    {
+      "domain": "Reception Clinic Cards & Tickets",
+      "ui_trigger": "shifts_and_visits_screen.ClinicCardGrid",
+      "endpoint": "POST /api/v1/visits",
+      "db_target": "mc_visits, mc_financial_transactions",
+      "status": "PASS"
+    },
+    {
+      "domain": "Doctor Consultation & Clinical Templates",
+      "ui_trigger": "DoctorConsultationWorkspace",
+      "endpoint": "POST /api/v1/encounters",
+      "db_target": "mc_encounters, mc_vital_signs",
+      "status": "PASS"
+    },
+    {
+      "domain": "Doctor Final Comments",
+      "ui_trigger": "DoctorConsultationWorkspace._commentsController",
+      "endpoint": "POST /api/v1/encounters (doctor_comments)",
+      "db_target": "mc_encounters.doctor_comments",
+      "status": "PASS"
+    },
+    {
+      "domain": "Doctor Commissions",
+      "ui_trigger": "DoctorCommissionsScreen",
+      "endpoint": "POST /api/v1/finance/commissions",
+      "db_target": "mc_doctor_commission_profiles",
+      "status": "PASS"
+    },
+    {
+      "domain": "Floating Draggable Notes FAB",
+      "ui_trigger": "DraggableNotesOverlay",
+      "endpoint": "POST /api/v1/internal-notes",
+      "db_target": "mc_internal_notes",
+      "status": "PASS"
+    },
+    {
+      "domain": "Note Pinning",
+      "ui_trigger": "DraggableNotesOverlay._togglePin",
+      "endpoint": "POST /api/v1/internal-notes/:id/pin",
+      "db_target": "mc_internal_notes.is_pinned",
+      "status": "PASS"
+    },
+    {
+      "domain": "Custom Permissions Administration",
+      "ui_trigger": "AdminEmployeeManagementScreen._ManageCustomPermissionsDialog",
+      "endpoint": "PUT /api/v1/staff/:id/permissions",
+      "db_target": "mc_users.custom_permissions",
+      "status": "PASS"
+    },
+    {
+      "domain": "Diagnostic & Nursing Orders",
+      "ui_trigger": "ClinicalModulesHubScreen",
+      "endpoint": "GET/POST /api/v1/orders",
+      "db_target": "mc_lab_orders, mc_rad_orders",
+      "status": "PASS"
+    },
+    {
+      "domain": "Pharmacy POS & FIFO Dispensation",
+      "ui_trigger": "ClinicalModulesHubScreen (Pharmacy)",
+      "endpoint": "POST /api/v1/inventory/pos/dispense",
+      "db_target": "mc_pharmacy_batches, mc_stock_moves",
+      "status": "PASS"
+    }
+  ]
+}

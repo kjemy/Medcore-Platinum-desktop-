@@ -1,0 +1,10 @@
+{
+  "workflow_file": "C:\\Users\\hp\\Desktop\\project 4\\.github\\workflows\\windows-release.yml",
+  "exists": true,
+  "windows_runner": true,
+  "mariadb_bundling": true,
+  "flutter_compilation": true,
+  "latest_run_id": "41121701402",
+  "latest_run_conclusion": "success",
+  "status": "PASS"
+}

@@ -325,4 +325,22 @@ void main() {
     );
     expect(isValidAfter, isFalse, reason: 'Revoked certificate must fail verification');
   });
+
+  tearDownAll(() async {
+    await server?.stop();
+    try {
+      final adminConn = await db.openDedicatedConnection(useDatabase: false);
+      try {
+        await adminConn.execute('DROP DATABASE IF EXISTS medcore_test_extpay');
+      } finally {
+        await adminConn.close();
+      }
+    } catch (_) {}
+    await db.close();
+    try {
+      if (securityRoot.existsSync()) {
+        securityRoot.deleteSync(recursive: true);
+      }
+    } catch (_) {}
+  });
 }

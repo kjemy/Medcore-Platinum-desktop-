@@ -1,0 +1,9 @@
+{
+  "gate": "GATE_12_SPECIALTY_CARE",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:23:00Z",
+  "inpatientBedsSupported": true,
+  "icuSofaScoringSupported": true,
+  "orSurgerySchedulingSupported": true,
+  "dialysisTrackingSupported": true
+}

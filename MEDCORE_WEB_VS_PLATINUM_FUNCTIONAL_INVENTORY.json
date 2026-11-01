@@ -1,0 +1,105 @@
+{
+  "auditMetadata": {
+    "auditType": "READ-ONLY FORENSIC COMPARISON",
+    "governanceAuthority": "Khaled Universal Engineering Constitution (@Khaled All Rules)",
+    "executionDate": "2026-11-01T21:00:00Z",
+    "codeChanges": 0,
+    "databaseMutations": 0,
+    "gitChanges": 0,
+    "deployment": 0
+  },
+  "baselines": {
+    "web": {
+      "path": "C:\\Users\\hp\\Desktop\\project2",
+      "frontendPath": "C:\\Users\\hp\\Desktop\\project2\\Frontend",
+      "frontendBranch": "implementation/integration-16-2026-10-02",
+      "frontendCommit": "b839e53",
+      "backendPath": "C:\\Users\\hp\\Desktop\\project2\\Backend\\MedCorePlugin",
+      "backendBranch": "implementation/identity-offline-foundation-2026-10-02",
+      "backendCommit": "e70eb96",
+      "stack": "Next.js 14, React 18, Zustand, WordPress REST Plugin, MariaDB"
+    },
+    "platinum": {
+      "path": "C:\\Users\\hp\\Desktop\\project 4",
+      "desktopPath": "C:\\Users\\hp\\Desktop\\project 4\\medcore_desktop",
+      "branch": "main",
+      "commit": "093c07f",
+      "serviceDirectory": "C:\\Users\\hp\\Desktop\\project 4\\medcore_local_service",
+      "stack": "Flutter 3.x, Dart 3.x, Local HTTP/SSE Service, Embedded MariaDB 11.4.4"
+    }
+  },
+  "metrics": {
+    "totalAssessedCapabilities": 118,
+    "fullParity": 28,
+    "webOnly": 46,
+    "platinumOnly": 14,
+    "partial": 12,
+    "backendOnly": 11,
+    "schemaOnly": 7,
+    "unknown": 0
+  },
+  "specialInvestigation": {
+    "canCreateManageClinics": false,
+    "canDefineClinicCards": false,
+    "canDefineServices": false,
+    "canDefineSuppliesConsumables": false,
+    "canDefineDoctors": "PARTIAL (Account only, no tariffs/commissions)",
+    "canDefineNurses": "PARTIAL (Account only, no hourly rate/shifts)",
+    "canDefineEmployees": "PARTIAL (Account only, no HR contracts)",
+    "canAssignStaffToClinics": "BACKEND_ONLY (mc_staff.clinic_id present, UI missing)",
+    "canDefineFineGrainedPermissions": "BACKEND_ONLY (261 catalog keys, UI editor missing)",
+    "canAssignPermissionsIndependentlyOfRoles": "BACKEND_ONLY (PUT /api/v1/staff/<id>/permissions supports custom mode, UI missing)",
+    "canEnforcePermissionsAtBackendLevel": true,
+    "equivalentFunctionalityElsewhere": [
+      {
+        "domain": "Resource Scheduling",
+        "location": "ResourceSchedulingManagementScreen",
+        "notes": "Defines Doctors, Rooms, Theaters, Equipment, Devices with duration and conflict checks"
+      },
+      {
+        "domain": "Clinical Templates",
+        "location": "ClinicalTemplateEditorScreen",
+        "notes": "Full specialty template editor with versioning and activation"
+      },
+      {
+        "domain": "Facility Modules & Branding",
+        "location": "TechnicianConsoleScreen",
+        "notes": "Module enablement flags and facility identity configuration"
+      },
+      {
+        "domain": "Hardware & PKI",
+        "location": "NetworkDeviceCenterScreen",
+        "notes": "LAN peer pairing and local X.509 certificates"
+      },
+      {
+        "domain": "Maintenance & Backups",
+        "location": "MaintenanceCenterScreen",
+        "notes": "MariaDB physical backup snapshots, verification and restore"
+      }
+    ]
+  },
+  "masterDataStatus": {
+    "totalWebDefinitions": 21,
+    "clinics": "WEB_ONLY",
+    "doctors": "PARTIAL",
+    "referrals": "WEB_ONLY",
+    "services": "WEB_ONLY",
+    "branches": "WEB_ONLY",
+    "rooms": "WEB_ONLY",
+    "operatingRooms": "WEB_ONLY",
+    "icu": "WEB_ONLY",
+    "icuDevices": "WEB_ONLY",
+    "nicuRooms": "WEB_ONLY",
+    "incubators": "WEB_ONLY",
+    "nicuDevices": "WEB_ONLY",
+    "lab": "WEB_ONLY",
+    "externalLabs": "WEB_ONLY",
+    "radiology": "WEB_ONLY",
+    "insurance": "WEB_ONLY",
+    "nurses": "PARTIAL",
+    "employees": "PARTIAL",
+    "conditions": "WEB_ONLY",
+    "paymentMethods": "WEB_ONLY",
+    "currency": "PARTIAL"
+  }
+}

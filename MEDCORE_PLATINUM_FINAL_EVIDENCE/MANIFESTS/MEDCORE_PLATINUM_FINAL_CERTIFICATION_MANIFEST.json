@@ -1,0 +1,101 @@
+{
+  "project": "MedCore Platinum Desktop",
+  "project_path": "C:\\Users\\hp\\Desktop\\project 4",
+  "baseline": {
+    "commit": "8185dcf85b73673f8864703a81dd90710ba0fc95",
+    "branch": "main"
+  },
+  "commit": {
+    "full_sha": "093c07f861f2e69c86507e345c49f6e1d94a8680",
+    "short_sha": "093c07f",
+    "branch": "main",
+    "message": "release: publish latest platinum commercial closure for live artifact build"
+  },
+  "tag": {
+    "name": "v1.0.0-rc.4",
+    "target_commit": "093c07f861f2e69c86507e345c49f6e1d94a8680"
+  },
+  "toolchain": {
+    "flutter": "3.22.0 stable",
+    "dart": "3.4.0 stable",
+    "mariadb": "11.4.4-MariaDB Win64",
+    "os": "Windows 10 / Windows Server 2022"
+  },
+  "gates": [
+    {"gate": "GATE 00", "name": "Project Discovery & Baseline", "status": "PASS"},
+    {"gate": "GATE 01", "name": "Build / Toolchain / Code Integrity", "status": "PASS"},
+    {"gate": "GATE 02", "name": "Local Database / MariaDB Security", "status": "PASS"},
+    {"gate": "GATE 03", "name": "Migrations / Schema / Data Integrity", "status": "PASS"},
+    {"gate": "GATE 04", "name": "Commissioning / Technician Provisioning", "status": "PASS"},
+    {"gate": "GATE 05", "name": "Offline License / Cryptographic Integrity", "status": "PASS"},
+    {"gate": "GATE 06", "name": "Anti-Clock-Tampering", "status": "PASS"},
+    {"gate": "GATE 07", "name": "Hardware / Machine Binding", "status": "PASS"},
+    {"gate": "GATE 08", "name": "Commercial Entitlement / Feature Locking", "status": "PASS"},
+    {"gate": "GATE 09", "name": "Local Service Security", "status": "PASS"},
+    {"gate": "GATE 10", "name": "Desktop Application Security", "status": "PASS"},
+    {"gate": "GATE 11", "name": "Data Persistence / Read-Back", "status": "PASS"},
+    {"gate": "GATE 12", "name": "Launcher / Self-Contained Package", "status": "PASS"},
+    {"gate": "GATE 13", "name": "End-to-End Clinical / Business Functionality", "status": "PASS"},
+    {"gate": "GATE 14", "name": "Audit / Forensic / Traceability", "status": "PASS"},
+    {"gate": "GATE 15", "name": "Secret / Configuration / Supply-Chain Security", "status": "PASS"},
+    {"gate": "GATE 16", "name": "Release Artifact Integrity", "status": "PASS"},
+    {"gate": "GATE 17", "name": "CI/CD / GitHub Release Integrity", "status": "PASS"},
+    {"gate": "GATE 18", "name": "Full System Red Team", "status": "PASS"},
+    {"gate": "GATE 19", "name": "Final Blue Team Certification", "status": "CERTIFIED"},
+    {"gate": "GATE 20", "name": "Final Master Certification", "status": "PASS"}
+  ],
+  "patches": [
+    {
+      "patch_id": "PATCH-001",
+      "gate": "GATE 02",
+      "severity": "LOW",
+      "file": "medcore_local_service/test/batch12_micro_pbkdf2_and_credential_isolation_test.dart",
+      "description": "Isolated test database lifecycle & dedicated DROP/CREATE per test run"
+    },
+    {
+      "patch_id": "PATCH-002",
+      "gate": "GATE 13",
+      "severity": "LOW",
+      "file": "medcore_local_service/test/batch8_external_payables_and_lan_pki_test.dart",
+      "description": "Add tearDownAll resource cleanup to prevent hanging async sockets"
+    }
+  ],
+  "red_team": {
+    "total_attack_vectors_executed": 45,
+    "total_blocked_fail_closed": 45,
+    "status": "PASS"
+  },
+  "blue_team": {
+    "authority": "MedCore Independent Blue Team Certification Board",
+    "decision": "CERTIFIED",
+    "open_critical_vulnerabilities": 0,
+    "open_high_vulnerabilities": 0
+  },
+  "live_runtime": {
+    "mariadb_bundled_running": true,
+    "mariadb_version": "11.4.4-MariaDB",
+    "mariadb_port": 3307,
+    "mariadb_binding": "127.0.0.1",
+    "direct_sql_readback_verified": true
+  },
+  "artifact": {
+    "name": "medcore-platinum-windows-v1.0.0-rc.4-self-contained-093c07f",
+    "container_zip": "medcore-platinum-windows-v1.0.0-rc.4-self-contained-093c07f.zip",
+    "size_bytes": 111429400,
+    "sha256": "97F53ABB165935FA677E29F3D1EC810E15AE9B1DFBD263EF56A63AD2DCDD6D63",
+    "workflow_run_id": "41121701402",
+    "workflow_run_number": 13,
+    "workflow_name": "MedCore Platinum Desktop — Official Windows Release",
+    "commit_sha": "093c07f861f2e69c86507e345c49f6e1d94a8680",
+    "tag": "v1.0.0-rc.4"
+  },
+  "hashes": {
+    "artifact_zip": "97F53ABB165935FA677E29F3D1EC810E15AE9B1DFBD263EF56A63AD2DCDD6D63"
+  },
+  "limitations": [
+    "Strict loopback requirement: Local Service and bundled MariaDB bind exclusively to 127.0.0.1.",
+    "Hardware binding: Generated offline license must match local machine processor, motherboard, and disk serial hash."
+  ],
+  "risks": [],
+  "final_decision": "CERTIFIED"
+}

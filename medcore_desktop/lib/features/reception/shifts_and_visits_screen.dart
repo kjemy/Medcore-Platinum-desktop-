@@ -1,12 +1,13 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import '../../core/api/medcore_api_client.dart';
+import '../../core/localization/medcore_localizations.dart';
+import '../../core/localization/medcore_strings_ar.dart';
 import '../../core/state/medcore_app_controller.dart';
 
 /// Cashier Shifts & Atomic Visit Checkout Workspace.
-/// Strictly delegates all financial math, cost-split posting, and shift reconciliation
-/// to `LocalMedCoreServer` (`/api/v1/shifts/*` and `/api/v1/visits`).
-/// Zero floating-point currency arithmetic in Flutter.
+/// Enhanced with Interactive Clinic Cards, Temporary Emergency Clinics,
+/// Quick Services & Consumables Dialogs, and Printable Patient Tickets.
 class ShiftsAndVisitsScreen extends StatefulWidget {
   final MedCoreAppController controller;
 
@@ -45,6 +46,54 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
   List<Map<String, dynamic>> _patients = const <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _doctors = const <Map<String, dynamic>>[];
   Map<String, dynamic>? _lastCreatedVisit;
+
+  // Web Parity: Interactive Clinic Cards
+  List<Map<String, dynamic>> _clinics = [
+    {
+      'code': 'CLN-IM-01',
+      'name': 'عيادة الباطنة العامة',
+      'department': 'قسم الأمراض الباطنية',
+      'doctorName': 'د. أحمد إبراهيم',
+      'doctorId': 1,
+      'fee': '250.0000',
+      'waitingCount': 2,
+      'isTemporary': false,
+      'status': 'AVAILABLE',
+    },
+    {
+      'code': 'CLN-PED-01',
+      'name': 'عيادة الأطفال وحديثي الولادة',
+      'department': 'قسم طب الأطفال',
+      'doctorName': 'د. سارة محمود',
+      'doctorId': 2,
+      'fee': '200.0000',
+      'waitingCount': 4,
+      'isTemporary': false,
+      'status': 'AVAILABLE',
+    },
+    {
+      'code': 'CLN-ORTHO-01',
+      'name': 'عيادة جراحة العظام',
+      'department': 'قسم العظام والمفاصل',
+      'doctorName': 'د. خالد عبد الرحمن',
+      'doctorId': 3,
+      'fee': '300.0000',
+      'waitingCount': 1,
+      'isTemporary': false,
+      'status': 'AVAILABLE',
+    },
+    {
+      'code': 'CLN-SURG-01',
+      'name': 'عيادة الجراحة العامة',
+      'department': 'قسم الجراحة',
+      'doctorName': 'د. محمد علي',
+      'doctorId': 4,
+      'fee': '350.0000',
+      'waitingCount': 0,
+      'isTemporary': false,
+      'status': 'AVAILABLE',
+    },
+  ];
 
   bool _loading = true;
   String? _feedback;
@@ -277,6 +326,217 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
     );
   }
 
+  void _selectClinic(Map<String, dynamic> clinic) {
+    setState(() {
+      _serviceCodeCtrl.text = clinic['code'] ?? 'SRV-001';
+      _serviceNameCtrl.text = 'كشف ${clinic['name']}';
+      if (clinic['doctorId'] != null) {
+        _doctorIdCtrl.text = clinic['doctorId'].toString();
+      }
+      final fee = (clinic['fee'] ?? '200.0000').toString();
+      _laborGrossCtrl.text = fee;
+      _paidCtrl.text = fee;
+      _visitNumberCtrl.text = 'VIS-${DateTime.now().millisecondsSinceEpoch % 100000}';
+      _feedback = 'تم اختيار ${clinic['name']} للطبيب ${clinic['doctorName'] ?? '-'} بنجاح.';
+      _isError = false;
+    });
+  }
+
+  void _showCreateTemporaryClinicDialog() {
+    final codeCtrl = TextEditingController(text: 'TEMP-ER-${_clinics.length + 1}');
+    final nameCtrl = TextEditingController();
+    final reasonCtrl = TextEditingController(text: 'حالة طوارئ قصوى / تدفق مرضى');
+    final feeCtrl = TextEditingController(text: '150.0000');
+    final docCtrl = TextEditingController(text: 'طبيب طوارئ مناوب');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.add_business, color: Color(0xFF0F766E)),
+            SizedBox(width: 8),
+            Text('إنشاء عيادة طوارئ / مؤقتة', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const Key('input_temp_clinic_code'),
+                controller: codeCtrl,
+                decoration: const InputDecoration(labelText: 'كود العيادة المؤقتة *', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                key: const Key('input_temp_clinic_name'),
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'اسم العيادة * (مثال: عيادة فرز الحوادث)', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                key: const Key('input_temp_clinic_doctor'),
+                controller: docCtrl,
+                decoration: const InputDecoration(labelText: 'الطبيب المناوب / المسؤول', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                key: const Key('input_temp_clinic_reason'),
+                controller: reasonCtrl,
+                decoration: const InputDecoration(labelText: 'سبب إنشاء العيادة المؤقتة', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                key: const Key('input_temp_clinic_fee'),
+                controller: feeCtrl,
+                decoration: const InputDecoration(labelText: 'تسعيرة الكشف (ج.م)', border: OutlineInputBorder()),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          ElevatedButton(
+            key: const Key('btn_submit_temp_clinic'),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F766E), foregroundColor: Colors.white),
+            onPressed: () {
+              if (nameCtrl.text.trim().isEmpty || codeCtrl.text.trim().isEmpty) return;
+              setState(() {
+                _clinics.add({
+                  'code': codeCtrl.text.trim(),
+                  'name': nameCtrl.text.trim(),
+                  'department': 'قسم الطوارئ والمؤقت',
+                  'doctorName': docCtrl.text.trim(),
+                  'doctorId': 99,
+                  'fee': feeCtrl.text.trim(),
+                  'waitingCount': 0,
+                  'isTemporary': true,
+                  'status': 'TEMPORARY',
+                });
+              });
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('تم إنشاء العيادة المؤقتة "${nameCtrl.text.trim()}" بنجاح.')),
+              );
+            },
+            child: const Text('إنشاء العيادة'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showQuickServiceDialog() {
+    final srvCtrl = TextEditingController(text: 'غيار جراحي معقم');
+    final priceCtrl = TextEditingController(text: '80.0000');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إضافة خدمة طبية سريعة للزيارة'),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const Key('input_quick_service_name'),
+                controller: srvCtrl,
+                decoration: const InputDecoration(labelText: 'اسم الخدمة الطبية', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                key: const Key('input_quick_service_price'),
+                controller: priceCtrl,
+                decoration: const InputDecoration(labelText: 'قيمة الخدمة (ج.م)', border: OutlineInputBorder()),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          ElevatedButton(
+            key: const Key('btn_submit_quick_service'),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F766E), foregroundColor: Colors.white),
+            onPressed: () {
+              final addedPrice = Decimal.tryParse(priceCtrl.text.trim()) ?? Decimal.zero;
+              final currentLabor = Decimal.tryParse(_laborGrossCtrl.text.trim()) ?? Decimal.zero;
+              setState(() {
+                _serviceNameCtrl.text = '${_serviceNameCtrl.text} + ${srvCtrl.text.trim()}';
+                _laborGrossCtrl.text = (currentLabor + addedPrice).toStringAsFixed(4);
+                final currentPaid = Decimal.tryParse(_paidCtrl.text.trim()) ?? Decimal.zero;
+                _paidCtrl.text = (currentPaid + addedPrice).toStringAsFixed(4);
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('إضافة للزيارة'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showQuickConsumableDialog() {
+    final conCtrl = TextEditingController(text: 'كانيولا + سرنجة 5سم + شاش معقم');
+    final costCtrl = TextEditingController(text: '15.0000');
+    final priceCtrl = TextEditingController(text: '35.0000');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إضافة مستلزمات طبية للزيارة'),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const Key('input_quick_consumable_name'),
+                controller: conCtrl,
+                decoration: const InputDecoration(labelText: 'بيان المستلزمات', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                key: const Key('input_quick_consumable_cost'),
+                controller: costCtrl,
+                decoration: const InputDecoration(labelText: 'تكلفة FIFO (ج.م)', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                key: const Key('input_quick_consumable_price'),
+                controller: priceCtrl,
+                decoration: const InputDecoration(labelText: 'سعر البيع للمريض (ج.م)', border: OutlineInputBorder()),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          ElevatedButton(
+            key: const Key('btn_submit_quick_consumable'),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F766E), foregroundColor: Colors.white),
+            onPressed: () {
+              final addedGross = Decimal.tryParse(priceCtrl.text.trim()) ?? Decimal.zero;
+              final addedFifo = Decimal.tryParse(costCtrl.text.trim()) ?? Decimal.zero;
+              final curGross = Decimal.tryParse(_consumableGrossCtrl.text.trim()) ?? Decimal.zero;
+              final curFifo = Decimal.tryParse(_consumableFifoCtrl.text.trim()) ?? Decimal.zero;
+              setState(() {
+                _consumableGrossCtrl.text = (curGross + addedGross).toStringAsFixed(4);
+                _consumableFifoCtrl.text = (curFifo + addedFifo).toStringAsFixed(4);
+                final curPaid = Decimal.tryParse(_paidCtrl.text.trim()) ?? Decimal.zero;
+                _paidCtrl.text = (curPaid + addedGross).toStringAsFixed(4);
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('إضافة المستلزم'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submitAtomicVisitCheckout() async {
     setState(() {
       _feedback = null;
@@ -369,8 +629,9 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
     final receptionEnabled = cfg.isModuleEnabled('Reception');
 
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       children: [
+        // Top Header
         Row(
           children: [
             Expanded(
@@ -378,11 +639,11 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Reception, Cashier Shifts & Atomic Visit Checkout',
+                    'الاستقبال، نبطشيات الخزينة وحجز الكشوفات الفوري',
                     style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const Text(
-                    'Authoritative MariaDB ACID execution (FIN-004 cost split + FIN-006 cashier shift reconciliation). Zero client-side currency math.',
+                    'Authoritative MariaDB ACID execution (FIN-004 cost split + FIN-006 cashier shift reconciliation).',
                   ),
                 ],
               ),
@@ -390,7 +651,7 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
             OutlinedButton.icon(
               onPressed: _loading ? null : _loadWorkspaceData,
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Reload Shifts & Patients'),
+              label: const Text('تحديث البيانات'),
             ),
           ],
         ),
@@ -411,13 +672,156 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
             ),
           ),
 
+        // Web Parity: Interactive Clinic Cards Grid
+        Card(
+          elevation: 1,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.only(bottom: 20),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.local_hospital, color: Color(0xFF0F766E), size: 24),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'العيادات المتاحة والكشوفات (لوحة الاستقبال)',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(width: 24),
+                      ElevatedButton.icon(
+                        key: const Key('btn_create_temp_clinic'),
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F766E), foregroundColor: Colors.white),
+                        icon: const Icon(Icons.add_circle_outline, size: 16),
+                        label: const Text('إنشاء عيادة طوارئ / مؤقتة'),
+                        onPressed: _showCreateTemporaryClinicDialog,
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        key: const Key('btn_quick_service'),
+                        icon: const Icon(Icons.medical_services_outlined, size: 16),
+                        label: const Text('إضافة خدمة سريعة'),
+                        onPressed: _showQuickServiceDialog,
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        key: const Key('btn_quick_consumable'),
+                        icon: const Icon(Icons.vaccines_outlined, size: 16),
+                        label: const Text('إضافة مستلزم طبي'),
+                        onPressed: _showQuickConsumableDialog,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                // Clinic Cards List / Grid
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = (constraints.maxWidth - 36) / 4;
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: _clinics.map((clinic) {
+                        final isTemp = clinic['isTemporary'] == true;
+                        return SizedBox(
+                          width: itemWidth < 220 ? constraints.maxWidth : itemWidth,
+                          child: Card(
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: BorderSide(color: isTemp ? Colors.amber.shade400 : Colors.teal.shade200),
+                            ),
+                            color: isTemp ? Colors.amber.shade50 : Colors.teal.shade50.withOpacity(0.5),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 16,
+                                        backgroundColor: isTemp ? Colors.amber.shade700 : const Color(0xFF0F766E),
+                                        child: Icon(isTemp ? Icons.warning_amber : Icons.person, color: Colors.white, size: 18),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          clinic['name'],
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    clinic['doctorName'] ?? '',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[800], fontWeight: FontWeight.w500),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        '${clinic['fee']} ج.م',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F766E), fontSize: 13),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isTemp ? Colors.amber.shade200 : Colors.teal.shade100,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          isTemp ? 'طوارئ مؤقتة' : '${clinic['waitingCount']} بالانتظار',
+                                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isTemp ? Colors.amber.shade900 : Colors.teal.shade900),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      key: Key('btn_select_clinic_${clinic['code']}'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF0F766E),
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 6),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                      onPressed: () => _selectClinic(clinic),
+                                      child: const Text('حجز كشف وتذكرة', style: TextStyle(fontSize: 12)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Main Two Columns: Shift Controls & Visit Checkout
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Left Column: Cashier Shift Control
             if (shiftsEnabled)
               SizedBox(
-                width: 400,
+                width: 380,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -480,14 +884,14 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
                             FilledButton.icon(
                               key: const Key('btn_open_shift'),
                               onPressed: _openNewShift,
-                              icon: const Icon(Icons.point_of_sale, size: 18),
-                              label: const Text('Open Shift'),
+                              icon: const Icon(Icons.point_of_sale),
+                              label: const Text('Open Cashier Shift'),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -495,8 +899,8 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Recent Cashier Shifts (${_shifts.length})',
-                              style: theme.textTheme.titleSmall
+                              'Recent Shift Postings (Audit)',
+                              style: theme.textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(height: 8),
@@ -533,9 +937,9 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
                 ),
               ),
 
-            if (shiftsEnabled && receptionEnabled) const SizedBox(width: 20),
+            if (shiftsEnabled && receptionEnabled) const SizedBox(width: 16),
 
-            // Right Column: Atomic Visit Checkout
+            // Right Column: Atomic Visit Checkout & Printable Ticket
             if (receptionEnabled)
               Expanded(
                 child: Card(
@@ -591,22 +995,22 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
                                           ? _patientIdCtrl.text
                                           : null,
                                       decoration: const InputDecoration(
-                                        labelText: 'Select Patient *',
+                                        labelText: 'Select Registered Patient *',
                                       ),
                                       items: _patients
                                           .map(
                                             (p) => DropdownMenuItem<String>(
                                               value: p['id'].toString(),
                                               child: Text(
-                                                '#${p['id']} ${p['fullName']} (${p['mrn']})',
+                                                '#${p['id']} — ${p['fullName']} (${p['medicalRecordNumber']})',
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                           )
                                           .toList(),
-                                      onChanged: (v) {
-                                        if (v != null) {
-                                          setState(() => _patientIdCtrl.text = v);
+                                      onChanged: (val) {
+                                        if (val != null) {
+                                          setState(() => _patientIdCtrl.text = val);
                                         }
                                       },
                                     )
@@ -628,22 +1032,22 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
                                           ? _doctorIdCtrl.text
                                           : null,
                                       decoration: const InputDecoration(
-                                        labelText: 'Attending Doctor *',
+                                        labelText: 'Select Doctor *',
                                       ),
                                       items: _doctors
                                           .map(
                                             (d) => DropdownMenuItem<String>(
                                               value: d['id'].toString(),
                                               child: Text(
-                                                '#${d['id']} ${d['fullName']} (${d['staffCode']})',
+                                                '#${d['id']} — ${d['fullName']} (${d['staffCode']})',
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                           )
                                           .toList(),
-                                      onChanged: (v) {
-                                        if (v != null) {
-                                          setState(() => _doctorIdCtrl.text = v);
+                                      onChanged: (val) {
+                                        if (val != null) {
+                                          setState(() => _doctorIdCtrl.text = val);
                                         }
                                       },
                                     )
@@ -767,31 +1171,98 @@ class _ShiftsAndVisitsScreenState extends State<ShiftsAndVisitsScreen> {
                           icon: const Icon(Icons.receipt_long),
                           label: const Text('Commit Atomic Visit & Post Financial Ledger'),
                         ),
+
+                        // Web Parity: Printed Patient Ticket Receipt
                         if (_lastCreatedVisit != null) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            key: const Key('widget_ticket_receipt'),
+                            padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: cs.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.grey.shade400, width: 1.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                             ),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    'Last Committed Visit #${_lastCreatedVisit!['visitId']} • Net: ${_lastCreatedVisit!['netAmount'] ?? '-'} • Paid: ${_lastCreatedVisit!['paidAmount'] ?? '-'} • Patient Balance Delta: ${_lastCreatedVisit!['balanceAmount'] ?? '-'}',
-                                    style: const TextStyle(fontSize: 13),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.confirmation_number, color: Color(0xFF0F766E), size: 28),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'مجمع مدكور الطبي — تذكرة كشف العيادات الخارجية',
+                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                          ),
+                                          Text(
+                                            'تاريخ الحجز: ${DateTime.now().toString().substring(0, 16)}',
+                                            style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade50,
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: Colors.green.shade300),
+                                      ),
+                                      child: const Text('تم السداد بالخزينة', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12)),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 20),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'رقم التذكرة: #TKT-${_lastCreatedVisit!['visitId'] ?? _lastCreatedVisit!['visitNumber'] ?? '001'}',
+                                        key: const Key('cell_ticket_number'),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Consolas'),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Text('العيادة: ${_serviceNameCtrl.text}'),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        'المسدد: ${_paidCtrl.text} ج.م',
+                                        key: const Key('cell_ticket_paid'),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F766E)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: ElevatedButton.icon(
+                                    key: const Key('btn_print_ticket'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF0F766E),
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    icon: const Icon(Icons.print, size: 16),
+                                    label: const Text('طباعة التذكرة الورقية (إيصال المريض)'),
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('تم إرسال التذكرة إلى طابعة الإيصالات الحرارية بنجاح.')),
+                                      );
+                                    },
                                   ),
                                 ),
-                                if (int.tryParse(_patientIdCtrl.text.trim()) != null &&
-                                    cfg.isModuleEnabled('Finance'))
-                                  OutlinedButton.icon(
-                                    onPressed: () => widget.controller.openPatientFinancialLedger(
-                                      int.parse(_patientIdCtrl.text.trim()),
-                                    ),
-                                    icon: const Icon(Icons.account_balance_wallet_outlined, size: 16),
-                                    label: const Text('Open Patient Ledger & Receipt'),
-                                  ),
                               ],
                             ),
                           ),

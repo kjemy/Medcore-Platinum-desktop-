@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "data": {
+    "batch15": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "1: Full Fresh Installation Simulation & Master Lifecycle Step 4: Technician configures hospital facility, edition & enabled modules\n00:12 +4: STAGE 21: Full Fresh Installation Simulation & Master Lifecycle Step 5: Technician provisions Initial Hospital Administrator with forced password change\n00:12 +5: STAGE 21: Full Fresh Installation Simulation & Master Lifecycle Step 6: Technician closes session (clean hand-off)\n00:12 +6: STAGE 21: Full Fresh Installation Simulation & Master Lifecycle Step 7: Admin logs in with temporary password -> forcePasswordChange = true\n00:12 +7: STAGE 21: Full Fresh Installation Simulation & Master Lifecycle Step 8: Admin updates password to permanent password -> forcePasswordChange = 0\n00:13 +8: STAGE 21: Full Fresh Installation Simulation & Master Lifecycle Step 9: Admin provisions Doctor and Receptionist staff roles\n00:15 +9: STAGE 21: Full Fresh Installation Simulation & Master Lifecycle Step 10: Receptionist registers Patient & books Appointment\n00:15 +10: STAGE 21: Full Fresh Installation Simulation & Master Lifecycle Step 11: Dynamic Clinical Template V1 created, published and recorded in encounter snapshot\n00:16 +11: STAGE 21: Full Fresh Installation Simulation & Master Lifecycle Step 12: Dynamic Multi-Resource Scheduling & True Concurrency Collision Proof\n00:17 +12: STAGE 21: Full Fresh Installation Simulation & Master Lifecycle Step 13: Stop Server & Restart (Process Restart Survival)\n00:17 +13: (tearDownAll)\n00:17 +13: All tests passed!\n"
+    },
+    "direct_sql_readback": {
+      "write_exit": 0,
+      "read_exit": 0,
+      "read_output": "hospital_code\tname\tstatus\nHOSP_PERSIST_VERIFY\tPersistence Test Center\tactive",
+      "verified": true
+    }
+  }
+}

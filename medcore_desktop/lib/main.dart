@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'core/localization/medcore_localizations.dart';
 import 'core/shell/medcore_desktop_shell.dart';
 import 'core/state/medcore_app_controller.dart';
 import 'features/auth/connection_and_login_screen.dart';
@@ -64,6 +66,17 @@ class _MedCorePlatinumDesktopAppState extends State<MedCorePlatinumDesktopApp> {
           theme: _controller.buildTheme(Brightness.light),
           darkTheme: _controller.buildTheme(Brightness.dark),
           themeMode: branding.flutterThemeMode,
+          locale: _controller.locale,
+          supportedLocales: const [
+            Locale('ar', 'EG'),
+            Locale('en', 'US'),
+          ],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+            MedCoreLocalizations.delegate,
+          ],
           builder: (context, child) {
             final mq = MediaQuery.of(context);
             return MediaQuery(

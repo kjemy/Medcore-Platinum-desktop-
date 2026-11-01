@@ -101,6 +101,18 @@ class _AdminEmployeeManagementScreenState extends State<AdminEmployeeManagementS
     );
   }
 
+  void _showPermissionsDialog(Map<String, dynamic> emp) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => _ManageCustomPermissionsDialog(
+        api: widget.controller.api,
+        employee: emp,
+        onUpdated: _loadEmployees,
+      ),
+    );
+  }
+
   void _showAuditDialog(Map<String, dynamic> emp) {
     showDialog(
       context: context,
@@ -388,6 +400,13 @@ class _AdminEmployeeManagementScreenState extends State<AdminEmployeeManagementS
                             tooltip: 'Edit Profile & Role',
                             onPressed: () => _showEditEmployeeDialog(emp),
                           ),
+                          IconButton(
+                            key: Key('btn_permissions_${emp['id']}'),
+                            icon: const Icon(Icons.admin_panel_settings_outlined, size: 20, color: Colors.indigo),
+                            tooltip: 'تخصيص الصلاحيات (RBAC)',
+                            onPressed: () => _showPermissionsDialog(emp),
+                          ),
+
                           IconButton(
                             icon: const Icon(Icons.password, size: 20),
                             tooltip: 'Reset Password',
@@ -1018,6 +1037,297 @@ class _EmployeeAuditDialogState extends State<_EmployeeAuditDialog> {
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+      ],
+    );
+  }
+}
+
+
+const Map<String, List<Map<String, String>>> kCategorizedPermissions = {
+  'إدارة النظام والمنشأة': [
+    {'key': 'dashboard', 'label': 'لوحة التحكم التنفيذية'},
+    {'key': 'admin', 'label': 'صلاحيات المدير الكاملة'},
+    {'key': 'settings_Definitions', 'label': 'إدارة التعريفات والبيانات الأساسية'},
+    {'key': 'settings_Permissions', 'label': 'إدارة وتخصيص صلاحيات الموظفين'},
+    {'key': 'security_Center', 'label': 'مركز الأمان وسجلات التدقيق'},
+  ],
+  'المرضى والاستقبال والورديات': [
+    {'key': 'patients', 'label': 'إدارة ملفات وسجلات المرضى'},
+    {'key': 'reception_PatientRegistration', 'label': 'تسجيل واستقبال مريض جديد'},
+    {'key': 'shifts', 'label': 'فتح وإغلاق وتسوية الورديات'},
+    {'key': 'reception_QuickCheckIn', 'label': 'تسجيل الدخول والزيارات السريعة'},
+    {'key': 'appointments', 'label': 'حجز وجدولة المواعيد'},
+  ],
+  'العيادات الطبية والأطباء': [
+    {'key': 'doctor', 'label': 'واجهة واستشارات الطبيب'},
+    {'key': 'clinic', 'label': 'إدارة العيادة وقائمة الانتظار'},
+    {'key': 'doctor_ClinicalWorkspace', 'label': 'مساحة العمل السريري والتشخيص'},
+    {'key': 'clinical_templates', 'label': 'استخدام وإدارة القوالب السريرية'},
+  ],
+  'المالية والفواتير والعمولات': [
+    {'key': 'finance', 'label': 'دفتر الأستاذ والتقارير المالية'},
+    {'key': 'finance_Invoices', 'label': 'إصدار الفواتير وسندات القبض'},
+    {'key': 'finance_Revenue', 'label': 'تقارير الإيرادات والمطابقات'},
+    {'key': 'settings_CommissionRules', 'label': 'حسابات وعمولات الأطباء'},
+  ],
+  'المختبر والأشعة (LIS / RIS)': [
+    {'key': 'lab', 'label': 'نظام المختبر والتحاليل LIS'},
+    {'key': 'lab_ResultsEntry', 'label': 'إدخال واعتماد نتائج التحاليل'},
+    {'key': 'rad', 'label': 'نظام الأشعة والتصوير الطبي RIS'},
+    {'key': 'rad_Reporting', 'label': 'كتابة واعتماد تقارير الأشعة'},
+  ],
+  'الصيدلية والمخازن ومبيعات POS': [
+    {'key': 'pharmacy_inventory', 'label': 'إدارة المخزون الدوائي'},
+    {'key': 'pharmacy_Dispensing', 'label': 'صرف الأدوية ومبيعات الصيدلية POS'},
+    {'key': 'inventory_ItemsCatalog', 'label': 'دليل الأصناف والمستلزمات'},
+  ],
+  'الأقسام الداخلية والوحدات التخصصية': [
+    {'key': 'inpatient', 'label': 'إدارة الدخول والأقسام الداخلية'},
+    {'key': 'inpatient_BedMap', 'label': 'خريطة الأسرة والإشغال'},
+    {'key': 'nurse', 'label': 'رعاية التمريض والملاحظات'},
+    {'key': 'icu_nicu', 'label': 'العناية المركزة والحضانات'},
+    {'key': 'surgery', 'label': 'غرف العمليات والجراحة'},
+    {'key': 'dialysis', 'label': 'وحدة الغسيل الكلوي'},
+  ],
+  'الأجهزة والصيانة والشبكة': [
+    {'key': 'settings_Devices', 'label': 'إدارة وربط أجهزة الشبكة LAN'},
+    {'key': 'settings_Backups', 'label': 'إدارة النسخ الاحتياطي والاستعادة'},
+  ],
+};
+
+class _ManageCustomPermissionsDialog extends StatefulWidget {
+  final MedCoreApiClient api;
+  final Map<String, dynamic> employee;
+  final VoidCallback onUpdated;
+
+  const _ManageCustomPermissionsDialog({
+    required this.api,
+    required this.employee,
+    required this.onUpdated,
+  });
+
+  @override
+  State<_ManageCustomPermissionsDialog> createState() => _ManageCustomPermissionsDialogState();
+}
+
+class _ManageCustomPermissionsDialogState extends State<_ManageCustomPermissionsDialog> {
+  late String _mode;
+  late Set<String> _selectedPerms;
+  bool _submitting = false;
+  String? _errorMsg;
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = (widget.employee['permissionsMode'] ?? 'default').toString();
+    final rawPerms = widget.employee['customPermissions'];
+    if (rawPerms is List) {
+      _selectedPerms = rawPerms.map((e) => e.toString()).toSet();
+    } else if (rawPerms is Set) {
+      _selectedPerms = rawPerms.map((e) => e.toString()).toSet();
+    } else {
+      _selectedPerms = <String>{};
+    }
+  }
+
+  Future<void> _submit() async {
+    setState(() {
+      _submitting = true;
+      _errorMsg = null;
+    });
+
+    try {
+      final staffId = widget.employee['id'];
+      await widget.api.putJson('/api/v1/admin/employees/$staffId', {
+        'permissionsMode': _mode,
+        'customPermissions': _selectedPerms.toList(),
+      });
+      widget.onUpdated();
+      if (!mounted) return;
+      Navigator.pop(context);
+    } on MedCoreApiException catch (e) {
+      setState(() {
+        _errorMsg = e.message;
+        _submitting = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMsg = 'Failed to save permissions: $e';
+        _submitting = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final fullName = widget.employee['fullName']?.toString() ?? 'الموظف';
+    final staffCode = widget.employee['staffCode']?.toString() ?? '';
+    final role = widget.employee['role']?.toString() ?? '';
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.security, color: Colors.indigo),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('تخصيص الصلاحيات وأذونات الوصول (RBAC) - $fullName ($staffCode)'),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 720,
+        height: 520,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_errorMsg != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: cs.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(_errorMsg!, style: TextStyle(color: cs.onErrorContainer)),
+              ),
+
+            // Mode Selector
+            Card(
+              elevation: 0,
+              color: cs.surfaceContainerHighest.withOpacity(0.5),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    const Text('نمط الصلاحيات:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 16),
+                    ChoiceChip(
+                      label: const Text('افتراضي بحسب الدور'),
+                      selected: _mode == 'default',
+                      onSelected: (s) {
+                        if (s) setState(() => _mode = 'default');
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      key: const Key('chip_custom_mode'),
+                      label: const Text('تخصيص يدوي للموظف'),
+                      selected: _mode == 'custom',
+                      onSelected: (s) {
+                        if (s) setState(() => _mode = 'custom');
+                      },
+                    ),
+                    const Spacer(),
+                    Chip(
+                      label: Text('الدور: $role', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            if (_mode == 'default')
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.lock_outline, size: 48, color: cs.primary),
+                      const SizedBox(height: 12),
+                      Text(
+                        'الموظف يعمل بنمط الصلاحيات الافتراضي لدور ($role).',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'لتمكين صلاحيات خاصة أو حجب أقسام محددة، اختر "تخصيص يدوي للموظف".',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: ListView(
+                  children: kCategorizedPermissions.entries.map((cat) {
+                    final catName = cat.key;
+                    final perms = cat.value;
+                    final allSelected = perms.every((p) => _selectedPerms.contains(p['key']));
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ExpansionTile(
+                        initiallyExpanded: false,
+                        title: Text(catName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  if (allSelected) {
+                                    for (final p in perms) {
+                                      _selectedPerms.remove(p['key']);
+                                    }
+                                  } else {
+                                    for (final p in perms) {
+                                      _selectedPerms.add(p['key']!);
+                                    }
+                                  }
+                                });
+                              },
+                              child: Text(allSelected ? 'إلغاء الكل' : 'تحديد الكل'),
+                            ),
+                            const Icon(Icons.expand_more),
+                          ],
+                        ),
+                        children: perms.map((p) {
+                          final key = p['key']!;
+                          final label = p['label']!;
+                          final isChecked = _selectedPerms.contains(key);
+
+                          return CheckboxListTile(
+                            key: Key('perm_tile_$key'),
+                            dense: true,
+                            title: Text(label),
+                            subtitle: Text(key, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                            value: isChecked,
+                            onChanged: (val) {
+                              setState(() {
+                                if (val == true) {
+                                  _selectedPerms.add(key);
+                                } else {
+                                  _selectedPerms.remove(key);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton.icon(
+          key: const Key('btn_save_permissions'),
+          onPressed: _submitting ? null : _submit,
+          icon: _submitting
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.save),
+          label: const Text('حفظ الصلاحيات'),
+        ),
       ],
     );
   }

@@ -1,0 +1,9 @@
+{
+  "suite": "clock_rollback_guard_acceptance_test.dart",
+  "results": {
+    "exit_code": 0,
+    "pass": true,
+    "stdout": "HMAC Integrity 20. Adversarial Test F-03: Process Lifecycle Restart Boundary Enforces Fail-Closed Security Time Without Pseudo-Monotonic Claims\n01:24 +20: P1 REMEDIATION: Server-Side Monotonic Clock Rollback Guard & Keyed HMAC Integrity 21. Adversarial Test F-04: Full ACID Transaction Atomicity and Rollback Proof During Maintenance Recovery Failure\n01:24 +21: P1 REMEDIATION: Server-Side Monotonic Clock Rollback Guard & Keyed HMAC Integrity 22. Recovery failpoints after nonce, session, clock and audit rollback every write and permit retry\n01:29 +22: P1 REMEDIATION: Server-Side Monotonic Clock Rollback Guard & Keyed HMAC Integrity 23. Forged authority evidence, production key separation, malformed claims and autocommit fallback are rejected\n01:31 +23: P1 REMEDIATION: Server-Side Monotonic Clock Rollback Guard & Keyed HMAC Integrity 24. Formal Schema Migration V012 Verification: mc_tenants.clock_guard_initialized_at reified in MariaDB\n01:32 +24: (tearDownAll)\n01:32 +24: All tests passed!\n"
+  },
+  "status": "PASS"
+}

@@ -32,6 +32,7 @@ import '../product/lan_pki_service.dart';
 import '../product/database_lifecycle_service.dart';
 import '../repositories/clinical_template_repository.dart';
 import '../repositories/scheduling_resource_repository.dart';
+import '../repositories/definitions_repository.dart';
 import '../security/commercial_entitlement_service.dart';
 import '../security/entitlement_middleware.dart';
 import '../security/hardware_binding_service.dart';
@@ -70,6 +71,7 @@ class LocalMedCoreServer {
   late final StaffEvaluationRepository staffEvaluationRepo;
   late final ClinicalTemplateRepository clinicalTemplateRepo;
   late final SchedulingResourceRepository schedulingResourceRepo;
+  late final DefinitionsRepository definitionsRepo;
   final String? runtimeDirectoryOverride;
   final String? migrationsDirectoryOverride;
   final bool autoBootstrapCommissioningSecret;
@@ -112,6 +114,7 @@ class LocalMedCoreServer {
     staffEvaluationRepo = StaffEvaluationRepository(txManager);
     clinicalTemplateRepo = ClinicalTemplateRepository(db);
     schedulingResourceRepo = SchedulingResourceRepository(db);
+    definitionsRepo = DefinitionsRepository(db);
     dualControlRepo = DualControlRepository(txManager);
     facilityConfigService = FacilityConfigService(db);
     technicianService = TechnicianService(
@@ -192,6 +195,7 @@ class LocalMedCoreServer {
   }
 
   int? get boundPort => _httpServer?.port;
+  String? get boundAddress => _httpServer?.address.address;
 
   Handler get handler {
     final router = Router();
@@ -1231,6 +1235,142 @@ class LocalMedCoreServer {
         'count': allocations.length,
         'items': allocations.map((a) => a.toJson()).toList(),
       });
+    });
+
+    // =========================================================================
+    // MASTER DEFINITIONS & PARITY EXTENSIONS (Gate 03)
+    // =========================================================================
+    router.get('/api/v1/definitions/<type>', (Request req, String type) async {
+      final scope = await _authorize(req, requiredPermission: 'settings_Definitions');
+      final status = req.requestedUri.queryParameters['status'];
+      final items = await definitionsRepo.listDefinitions(
+        scope: scope,
+        type: type,
+        status: status,
+      );
+      return _jsonOk({'count': items.length, 'type': type, 'items': items});
+    });
+
+    router.get('/api/v1/definitions/item/<publicId>', (Request req, String publicId) async {
+      final scope = await _authorize(req, requiredPermission: 'settings_Definitions');
+      final item = await definitionsRepo.getDefinition(scope: scope, publicId: publicId);
+      if (item == null) {
+        return _jsonError(404, 'NOT_FOUND', 'Definition item not found.');
+      }
+      return _jsonOk(item);
+    });
+
+    router.post('/api/v1/definitions/<type>', (Request req, String type) async {
+      final scope = await _authorize(req, requiredPermission: 'settings_Definitions', requireCanEdit: true);
+      final body = await _readJsonBody(req);
+      final code = (body['code'] ?? '').toString().trim();
+      final name = (body['name'] ?? '').toString().trim();
+      final dataJson = body['dataJson'] is Map ? Map<String, dynamic>.from(body['dataJson'] as Map) : null;
+      try {
+        final item = await definitionsRepo.createDefinition(
+          scope: scope,
+          type: type,
+          code: code,
+          name: name,
+          dataJson: dataJson,
+        );
+        return _jsonOk(item, statusCode: 201);
+      } on StateError catch (e) {
+        return _jsonError(409, 'DUPLICATE_CODE', e.message);
+      }
+    });
+
+    router.put('/api/v1/definitions/item/<publicId>', (Request req, String publicId) async {
+      final scope = await _authorize(req, requiredPermission: 'settings_Definitions', requireCanEdit: true);
+      final body = await _readJsonBody(req);
+      final name = body['name']?.toString();
+      final status = body['status']?.toString();
+      final dataJson = body['dataJson'] is Map ? Map<String, dynamic>.from(body['dataJson'] as Map) : null;
+      try {
+        final item = await definitionsRepo.updateDefinition(
+          scope: scope,
+          publicId: publicId,
+          name: name,
+          status: status,
+          dataJson: dataJson,
+        );
+        return _jsonOk(item);
+      } on StateError catch (e) {
+        return _jsonError(404, 'NOT_FOUND', e.message);
+      }
+    });
+
+    router.delete('/api/v1/definitions/item/<publicId>', (Request req, String publicId) async {
+      final scope = await _authorize(req, requiredPermission: 'settings_Definitions', requireCanDelete: true);
+      try {
+        await definitionsRepo.archiveDefinition(scope: scope, publicId: publicId);
+        return _jsonOk({'archived': true, 'publicId': publicId});
+      } on StateError catch (e) {
+        return _jsonError(404, 'NOT_FOUND', e.message);
+      }
+    });
+
+    // Doctor Commission Profiles
+    router.get('/api/v1/finance/commissions', (Request req) async {
+      final scope = await _authorize(req, requiredPermission: 'settings_CommissionRules');
+      final items = await definitionsRepo.listDoctorCommissions(scope: scope);
+      return _jsonOk({'count': items.length, 'items': items});
+    });
+
+    router.post('/api/v1/finance/commissions', (Request req) async {
+      final scope = await _authorize(req, requiredPermission: 'settings_CommissionRules', requireCanEdit: true);
+      final body = await _readJsonBody(req);
+      final doctorId = int.parse(body['doctorId'].toString());
+      final doctorCode = body['doctorCode'].toString().trim();
+      final mode = body['commissionMode']?.toString() ?? 'PERCENTAGE';
+      final consultShare = double.tryParse(body['consultationSharePct']?.toString() ?? '0') ?? 0.0;
+      final procShare = double.tryParse(body['procedureSharePct']?.toString() ?? '0') ?? 0.0;
+      final fixedCut = double.tryParse(body['fixedConsultationCut']?.toString() ?? '0') ?? 0.0;
+
+      final res = await definitionsRepo.upsertDoctorCommissionProfile(
+        scope: scope,
+        doctorId: doctorId,
+        doctorCode: doctorCode,
+        commissionMode: mode,
+        consultationSharePct: consultShare,
+        procedureSharePct: procShare,
+        fixedConsultationCut: fixedCut,
+      );
+      return _jsonOk(res);
+    });
+
+    // Internal Notes (Draggable FAB)
+    router.get('/api/v1/internal-notes', (Request req) async {
+      final scope = await _authorize(req, requiredPermission: 'dashboard');
+      final cat = req.requestedUri.queryParameters['category'];
+      final items = await definitionsRepo.listInternalNotes(scope: scope, category: cat);
+      return _jsonOk({'count': items.length, 'items': items});
+    });
+
+    router.post('/api/v1/internal-notes', (Request req) async {
+      final scope = await _authorize(req, requiredPermission: 'dashboard', requireCanEdit: true);
+      final body = await _readJsonBody(req);
+      final cat = (body['category'] ?? 'GENERAL').toString();
+      final subject = (body['subject'] ?? '').toString().trim();
+      final content = (body['content'] ?? '').toString().trim();
+      final isPinned = body['isPinned'] == true;
+
+      final note = await definitionsRepo.createInternalNote(
+        scope: scope,
+        category: cat,
+        subject: subject,
+        content: content,
+        isPinned: isPinned,
+      );
+      return _jsonOk(note, statusCode: 201);
+    });
+
+    router.post('/api/v1/internal-notes/<publicId>/pin', (Request req, String publicId) async {
+      final scope = await _authorize(req, requiredPermission: 'dashboard', requireCanEdit: true);
+      final body = await _readJsonBody(req);
+      final isPinned = body['isPinned'] == true;
+      await definitionsRepo.togglePinInternalNote(scope: scope, publicId: publicId, isPinned: isPinned);
+      return _jsonOk({'pinned': isPinned, 'publicId': publicId});
     });
 
     // =========================================================================

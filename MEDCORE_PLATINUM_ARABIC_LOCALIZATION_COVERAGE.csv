@@ -1,0 +1,51 @@
+Category,Arabic Label,Key / Identifier,Technical LTR Isolated,Context / Usage
+Navigation,لوحة التحكم الرئيسية,nav_dashboard,No,Sidebar Navigation
+Navigation,الاستقبال والزيارات,nav_reception,No,Sidebar Navigation
+Navigation,العيادات والاستشارات,nav_clinical_hub,No,Sidebar Navigation
+Navigation,شجرة التعريفات العامة,nav_definitions,No,Sidebar Navigation
+Navigation,نسب وعمولات الأطباء,nav_commissions,No,Sidebar Navigation
+Navigation,إدارة الموظفين والصلاحيات,nav_staff_admin,No,Sidebar Navigation
+Navigation,الصيدلية والمخازن,nav_pharmacy,No,Sidebar Navigation
+Navigation,المختبر والتحاليل,nav_laboratory,No,Sidebar Navigation
+Navigation,الأشعة والتصوير الطبي,nav_radiology,No,Sidebar Navigation
+Navigation,العمليات الجراحية,nav_surgeries,No,Sidebar Navigation
+Navigation,العناية المركزة (ICU),nav_icu,No,Sidebar Navigation
+Navigation,الغسيل الكلوي,nav_dialysis,No,Sidebar Navigation
+Navigation,المالية والخزينة,nav_finance,No,Sidebar Navigation
+Definitions,العيادات والمراكز,domain_clinics,No,Definitions Workspace Domain Tab
+Definitions,الخدمات الطبية,domain_services,No,Definitions Workspace Domain Tab
+Definitions,المستهلكات والمستلزمات,domain_consumables,No,Definitions Workspace Domain Tab
+Definitions,شركات التأمين,domain_insurance,No,Definitions Workspace Domain Tab
+Definitions,أقسام المستشفى,domain_departments,No,Definitions Workspace Domain Tab
+Definitions,أنواع الغرف والأسرة,domain_room_types,No,Definitions Workspace Domain Tab
+Definitions,الوحدات المتخصصة,domain_specialty_units,No,Definitions Workspace Domain Tab
+Definitions,قوالب الفحص الإكلينيكي,domain_exam_templates,No,Definitions Workspace Domain Tab
+Reception,تذكرة كشف عيادة,ticket_header,No,Thermal Receipt Dialog
+Reception,رقم التذكرة,ticket_number,Yes (TechnicalLtrField),Thermal Receipt Dialog
+Reception,اسم العيادة,clinic_name,No,Clinic Card & Receipt
+Reception,الطبيب المعالج,doctor_name,No,Clinic Card & Receipt
+Reception,سعر الكشف,consultation_fee,No,Clinic Card & Receipt
+Reception,قائمة الانتظار,waiting_queue,No,Clinic Card Grid
+Reception,إنشاء عيادة طوارئ مؤقتة,btn_create_temp_clinic,No,Reception Toolbar Action
+Clinical,استدعاء الكشف التالي,btn_call_next_patient,No,Doctor Consultation Workspace
+Clinical,الشكوى الرئيسية والأعراض,chief_complaint,No,Doctor Consultation Workspace
+Clinical,العلامات الحيوية,vital_signs,No,Doctor Consultation Workspace
+Clinical,ضغط الدم,blood_pressure,Yes (TechnicalLtrField),Doctor Consultation Workspace
+Clinical,النبض (نبضة/دقيقة),heart_rate,Yes (TechnicalLtrField),Doctor Consultation Workspace
+Clinical,الحرارة (درجة مئوية),temperature,Yes (TechnicalLtrField),Doctor Consultation Workspace
+Clinical,التشخيص الطبي المبدئي,diagnosis,No,Doctor Consultation Workspace
+Clinical,الروشتة الطبية والعلاج,prescriptions,No,Doctor Consultation Workspace
+Clinical,ملاحظات وتوصيات الطبيب النهائية,doctor_comments,No,Doctor Consultation Workspace
+Notes,المفكرة السريعة والملاحظات,notes_title,No,Draggable Notes Overlay
+Notes,إضافة ملاحظة جديدة,btn_add_note,No,Draggable Notes Overlay
+Notes,تثبيت الملاحظة,btn_pin_note,No,Draggable Notes Overlay
+Notes,عاجل / هام / عادي,note_priority,No,Draggable Notes Overlay
+Commissions,نسبة الكشف %,commission_consultation_pct,Yes (TechnicalLtrField),Doctor Commissions Screen
+Commissions,نسبة العمليات %,commission_procedure_pct,Yes (TechnicalLtrField),Doctor Commissions Screen
+Commissions,مبلغ مقطوع (ج.م),commission_fixed_amount,Yes (TechnicalLtrField),Doctor Commissions Screen
+RBAC,تخصيص صلاحيات استثنائية,custom_permissions_title,No,Employee Admin Dialog
+RBAC,الاعتماد على الصلاحيات الافتراضية للدور,use_role_defaults,No,Employee Admin Dialog
+RBAC,حفظ الصلاحيات المخصصة,btn_save_permissions,No,Employee Admin Dialog
+Technical,معرف الشبكة والمنفذ,network_endpoint,Yes (TechnicalLtrField),Technician Console & Status
+Technical,معرف السجل الفريد (UUID),record_uuid,Yes (TechnicalLtrField),System Inspector
+Currency,جنيه مصري,currency_egp,No,System-wide Currency Symbol (ج.م)

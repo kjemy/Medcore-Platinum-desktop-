@@ -1,0 +1,8 @@
+{
+  "gate": "GATE_09_NURSING",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:21:00Z",
+  "nursingTasksSupported": true,
+  "vitalsTriageSupported": true,
+  "apiEndpoint": "/api/v1/nursing/tasks"
+}

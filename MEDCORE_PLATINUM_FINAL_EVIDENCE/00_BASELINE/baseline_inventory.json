@@ -1,0 +1,21 @@
+{
+  "project_path": "C:\\Users\\hp\\Desktop\\project 4",
+  "git_branch": "main",
+  "git_commit": "093c07f861f2e69c86507e345c49f6e1d94a8680",
+  "git_short": "093c07f",
+  "git_status": "",
+  "git_tags": [
+    "v1.0.0-rc.1",
+    "v1.0.0-rc.2",
+    "v1.0.0-rc.3",
+    "v1.0.0-rc.4"
+  ],
+  "latest_commits": [
+    "093c07f release: publish latest platinum commercial closure for live artifact build",
+    "8185dcf feat(security): complete final independent certification and commercial closure",
+    "9a83d86 docs(governance): expand master closure report with defect register and full scorecards",
+    "d25f132 docs(governance): final authoritative commercial rights and offline licensing closure reports",
+    "95a2ca8 feat(security): commercial entitlement, offline signed licensing, hardware binding, dynamic MariaDB credentials and startup closure"
+  ],
+  "directory_count": 239
+}

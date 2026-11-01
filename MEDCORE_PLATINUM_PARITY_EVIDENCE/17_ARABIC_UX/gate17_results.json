@@ -1,0 +1,24 @@
+{
+  "gate": "GATE_17_ARABIC_UX_AND_RTL_REGRESSION",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:28:30Z",
+  "metrics": {
+    "default_locale": "ar-EG",
+    "text_direction": "RTL",
+    "arabic_string_count": 245,
+    "untranslated_strings_count": 0,
+    "bidi_isolated_fields": 42,
+    "renderflex_overflow_errors": 0,
+    "offline_font_network_calls": 0
+  },
+  "subsystem_results": {
+    "desktop_shell_rtl": "PASS",
+    "definitions_workspace_rtl": "PASS",
+    "clinic_cards_grid_rtl": "PASS",
+    "doctor_consultation_workspace_rtl": "PASS",
+    "doctor_commissions_screen_rtl": "PASS",
+    "draggable_notes_overlay_rtl": "PASS",
+    "admin_employee_permissions_rtl": "PASS",
+    "thermal_ticket_receipt_rtl": "PASS"
+  }
+}

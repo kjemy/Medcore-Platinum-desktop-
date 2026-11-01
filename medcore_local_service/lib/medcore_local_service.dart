@@ -31,4 +31,5 @@ export 'src/product/external_payable_service.dart';
 export 'src/product/lan_pki_service.dart';
 export 'src/product/xlsx_exporter.dart';
 export 'src/product/database_lifecycle_service.dart';
+export 'src/product/secure_lan_gateway.dart';
 export 'src/api/local_medcore_server.dart';

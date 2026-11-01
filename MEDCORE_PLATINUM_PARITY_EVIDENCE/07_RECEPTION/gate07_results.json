@@ -1,0 +1,19 @@
+{
+  "gate": "GATE_07_RECEPTION",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:05:00Z",
+  "clinicCardsEnabled": true,
+  "quickServicesEnabled": true,
+  "quickConsumablesEnabled": true,
+  "patientTicketPrinting": true,
+  "testSuite": "medcore_desktop/test/gate06_07_clinics_reception_cards_test.dart",
+  "testsPassed": 8,
+  "testsFailed": 0,
+  "redTeamAttacks": [
+    {
+      "id": "RED-07-01",
+      "description": "Idempotency key is generated and passed for replay prevention",
+      "result": "PASS"
+    }
+  ]
+}

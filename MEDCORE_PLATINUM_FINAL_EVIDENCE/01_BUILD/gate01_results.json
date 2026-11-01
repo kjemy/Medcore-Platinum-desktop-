@@ -1,0 +1,61 @@
+{
+  "01_service_dart_analyze": {
+    "command": "dart analyze",
+    "cwd": "C:\\Users\\hp\\Desktop\\project 4\\medcore_local_service",
+    "returncode": 0,
+    "duration_seconds": 59.59,
+    "success": true,
+    "log_file": "C:\\Users\\hp\\Desktop\\project 4\\MEDCORE_PLATINUM_FINAL_EVIDENCE\\01_BUILD\\01_service_dart_analyze.log",
+    "stdout_summary": [
+      "   info - test\\clock_rollback_guard_acceptance_test.dart:1014:11 - 'currentWallClock' is deprecated and shouldn't be used. Ignored for security decisions; trusted authority evidence is required. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use_from_same_package",
+      "   info - test\\clock_rollback_guard_acceptance_test.dart:1158:11 - 'currentWallClock' is deprecated and shouldn't be used. Ignored for security decisions; trusted authority evidence is required. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use_from_same_package",
+      "   info - test\\clock_rollback_guard_acceptance_test.dart:1239:9 - 'currentWallClock' is deprecated and shouldn't be used. Ignored for security decisions; trusted authority evidence is required. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use_from_same_package",
+      "",
+      "21 issues found."
+    ],
+    "stderr_summary": []
+  },
+  "02_desktop_flutter_analyze": {
+    "command": "flutter analyze",
+    "cwd": "C:\\Users\\hp\\Desktop\\project 4\\medcore_desktop",
+    "returncode": 0,
+    "duration_seconds": 87.76,
+    "success": true,
+    "log_file": "C:\\Users\\hp\\Desktop\\project 4\\MEDCORE_PLATINUM_FINAL_EVIDENCE\\01_BUILD\\02_desktop_flutter_analyze.log",
+    "stdout_summary": [
+      "Analyzing medcore_desktop...                                    ",
+      "No issues found! (ran in 78.0s)"
+    ],
+    "stderr_summary": []
+  },
+  "03_compile_server_exe": {
+    "command": "dart compile exe bin/server.dart -o build/server.exe",
+    "cwd": "C:\\Users\\hp\\Desktop\\project 4\\medcore_local_service",
+    "returncode": 0,
+    "duration_seconds": 23.61,
+    "success": true,
+    "log_file": "C:\\Users\\hp\\Desktop\\project 4\\MEDCORE_PLATINUM_FINAL_EVIDENCE\\01_BUILD\\03_compile_server_exe.log",
+    "stdout_summary": [
+      "Generated: c:\\users\\hp\\desktop\\project 4\\medcore_local_service\\build\\server.exe"
+    ],
+    "stderr_summary": []
+  },
+  "04_compile_commission_exe": {
+    "command": "dart compile exe bin/commission.dart -o build/commission.exe",
+    "cwd": "C:\\Users\\hp\\Desktop\\project 4\\medcore_local_service",
+    "returncode": 0,
+    "duration_seconds": 11.71,
+    "success": true,
+    "log_file": "C:\\Users\\hp\\Desktop\\project 4\\MEDCORE_PLATINUM_FINAL_EVIDENCE\\01_BUILD\\04_compile_commission_exe.log",
+    "stdout_summary": [
+      "Generated: c:\\users\\hp\\desktop\\project 4\\medcore_local_service\\build\\commission.exe"
+    ],
+    "stderr_summary": []
+  },
+  "wda_display_affinity_check": {
+    "file": "C:\\Users\\hp\\Desktop\\project 4\\medcore_desktop\\windows\\runner\\flutter_window.cpp",
+    "wda_found": true,
+    "success": true
+  },
+  "gate_status": "PASS"
+}

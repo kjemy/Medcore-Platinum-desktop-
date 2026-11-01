@@ -1,0 +1,8 @@
+{
+  "gate": "GATE_13_HR",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:23:00Z",
+  "staffDirectorySupported": true,
+  "granularRbacCustomization": true,
+  "apiEndpoint": "/api/v1/staff"
+}

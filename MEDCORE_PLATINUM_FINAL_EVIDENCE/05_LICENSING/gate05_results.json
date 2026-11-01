@@ -1,0 +1,21 @@
+{
+  "suite": "batch18 & batch19",
+  "results": {
+    "batch18_commercial_rights_and_offline_licensing_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "C seal\n00:14 +5: MEDCORE PLATINUM RUN #14/15: Commercial Rights & Offline Licensing Acceptance COMM-06: Expired license allows GET reads but strictly blocks POST mutations with 403\n00:16 +6: MEDCORE PLATINUM RUN #14/15: Commercial Rights & Offline Licensing Acceptance COMM-07: Strict UTC parsing prevents local machine timezone from altering expiration\n00:16 +7: MEDCORE PLATINUM RUN #14/15: Commercial Rights & Offline Licensing Acceptance COMM-08: Clean process restart with forward advancing time does not throw false tamper\n00:17 +8: MEDCORE PLATINUM RUN #14/15: Commercial Rights & Offline Licensing Acceptance COMM-09: Fresh baseline seeding initializes a finite 30-day evaluation, never perpetual NULL\n00:17 +9: MEDCORE PLATINUM RUN #14/15: Commercial Rights & Offline Licensing Acceptance COMM-10: Authenticated technician imports signed license via HTTP API\n00:18 +10: MEDCORE PLATINUM RUN #14/15: Commercial Rights & Offline Licensing Acceptance (tearDownAll)\n00:26 +10: All tests passed!\n"
+    },
+    "batch19_independent_certification_gates_03_to_07_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "19_independent_certification_gates_03_to_07_test.dart\n00:00 +0: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite (setUpAll)\n00:18 +0: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite GATE-03: Entitlement state transitions fail-closed against unauthorized reactivation\n00:20 +1: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite GATE-04: Adversarial License Mutation Matrix rejects all 10 tampering vectors\n00:20 +2: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite GATE-05: Hardware binding derivation enforces physical workstation identity\n00:20 +3: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite GATE-06: Copying database to another physical machine results in HARDWARE_BINDING_VIOLATION\n00:20 +4: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite GATE-07: Expired state permits clinical reading but rejects mutations with 403\n00:21 +5: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite (tearDownAll)\n00:30 +5: All tests passed!\n"
+    },
+    "clock_rollback_guard_acceptance_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "HMAC Integrity 20. Adversarial Test F-03: Process Lifecycle Restart Boundary Enforces Fail-Closed Security Time Without Pseudo-Monotonic Claims\n01:24 +20: P1 REMEDIATION: Server-Side Monotonic Clock Rollback Guard & Keyed HMAC Integrity 21. Adversarial Test F-04: Full ACID Transaction Atomicity and Rollback Proof During Maintenance Recovery Failure\n01:24 +21: P1 REMEDIATION: Server-Side Monotonic Clock Rollback Guard & Keyed HMAC Integrity 22. Recovery failpoints after nonce, session, clock and audit rollback every write and permit retry\n01:29 +22: P1 REMEDIATION: Server-Side Monotonic Clock Rollback Guard & Keyed HMAC Integrity 23. Forged authority evidence, production key separation, malformed claims and autocommit fallback are rejected\n01:31 +23: P1 REMEDIATION: Server-Side Monotonic Clock Rollback Guard & Keyed HMAC Integrity 24. Formal Schema Migration V012 Verification: mc_tenants.clock_guard_initialized_at reified in MariaDB\n01:32 +24: (tearDownAll)\n01:32 +24: All tests passed!\n"
+    }
+  },
+  "status": "PASS"
+}

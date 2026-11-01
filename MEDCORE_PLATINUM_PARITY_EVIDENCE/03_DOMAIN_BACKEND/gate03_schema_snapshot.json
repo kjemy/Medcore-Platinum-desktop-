@@ -1,0 +1,72 @@
+{
+  "schema_version": "V019",
+  "tables": {
+    "mc_definitions": {
+      "columns": [
+        "id",
+        "hospital_code",
+        "public_id",
+        "tenant_id",
+        "definition_type",
+        "code",
+        "name",
+        "status",
+        "version",
+        "data_json",
+        "created_by",
+        "updated_by",
+        "created_at",
+        "updated_at"
+      ],
+      "indexes": [
+        "PRIMARY",
+        "idx_mc_definitions_hosp",
+        "uk_mc_definitions_tenant_type_code"
+      ]
+    },
+    "mc_doctor_commission_profiles": {
+      "columns": [
+        "id",
+        "hospital_code",
+        "tenant_id",
+        "public_id",
+        "doctor_id",
+        "doctor_code",
+        "commission_mode",
+        "consultation_share_pct",
+        "procedure_share_pct",
+        "fixed_consultation_cut",
+        "status",
+        "created_by",
+        "created_at",
+        "updated_at"
+      ],
+      "indexes": [
+        "PRIMARY",
+        "idx_doc_comm_hosp",
+        "uk_doc_comm_tenant_doc"
+      ]
+    },
+    "mc_internal_notes": {
+      "columns": [
+        "id",
+        "hospital_code",
+        "tenant_id",
+        "public_id",
+        "author_staff_id",
+        "author_staff_name",
+        "category",
+        "subject",
+        "content",
+        "is_pinned",
+        "status",
+        "created_at",
+        "updated_at"
+      ],
+      "indexes": [
+        "PRIMARY",
+        "idx_mc_internal_notes_hosp"
+      ]
+    }
+  }
+}

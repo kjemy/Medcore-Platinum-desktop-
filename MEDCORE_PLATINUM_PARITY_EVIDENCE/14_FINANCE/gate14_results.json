@@ -1,0 +1,17 @@
+{
+  "gate": "GATE_14_FINANCE",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:20:00Z",
+  "commissionProfilesReified": true,
+  "dualControlSettlementsEnforced": true,
+  "testSuite": "medcore_desktop/test/gate14_doctor_commissions_test.dart",
+  "testsPassed": 3,
+  "testsFailed": 0,
+  "redTeamAttacks": [
+    {
+      "id": "RED-14-01",
+      "description": "Non-numeric doctor ID fails closed without calling API",
+      "result": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "gate": "GATE_08_CLINICAL",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:12:00Z",
+  "doctorQueueIntegrated": true,
+  "vitalsSupported": true,
+  "templatesApplicatorSupported": true,
+  "ePrescriptionsSupported": true,
+  "doctorCommentsSupported": true,
+  "testSuite": "medcore_desktop/test/gate08_doctor_consultation_test.dart",
+  "testsPassed": 6,
+  "testsFailed": 0,
+  "redTeamAttacks": [
+    {
+      "id": "RED-08-01",
+      "description": "Vital signs tampering does not crash rendering or query execution",
+      "result": "PASS"
+    }
+  ]
+}

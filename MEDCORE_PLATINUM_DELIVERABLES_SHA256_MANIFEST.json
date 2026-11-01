@@ -1,0 +1,62 @@
+{
+  "MEDCORE_PLATINUM_ARABIC_FUNCTIONAL_PARITY_MASTER_REPORT.md": {
+    "size_bytes": 4697,
+    "sha256": "4dcda774ec8ae9ce909d305e35878e2c40cf4c5fec108d3a917a6f347065827a",
+    "verified": true
+  },
+  "MEDCORE_PLATINUM_ARABIC_FUNCTIONAL_PARITY_MANIFEST.json": {
+    "size_bytes": 1731,
+    "sha256": "fd169cac22f17b2c0b0becccb40816e70a9f4b3f3abacc1626f82a926bbd4cef",
+    "verified": true
+  },
+  "MEDCORE_PLATINUM_WEB_PARITY_TRACEABILITY_MATRIX.csv": {
+    "size_bytes": 5579,
+    "sha256": "a68190a36aa0e762722356400fb10dd27a51de45f0172ad97706aac47f273877",
+    "verified": true
+  },
+  "MEDCORE_PLATINUM_GATES_SCORECARD.csv": {
+    "size_bytes": 2385,
+    "sha256": "65cca57dabb4d303e51836322c39c162da7645252665da6c2cafb6dcfb51c928",
+    "verified": true
+  },
+  "MEDCORE_PLATINUM_PATCH_REGISTER.md": {
+    "size_bytes": 3230,
+    "sha256": "325e19226b9ad7c0c6e882d5e91f4e65158e2ea9615ea31fbe8b6e233f1220de",
+    "verified": true
+  },
+  "MEDCORE_PLATINUM_RBAC_FINAL_AUDIT.md": {
+    "size_bytes": 2195,
+    "sha256": "897218e877a99813e4d2e84cfb85b6e8e258979c921000693b7dd2d35bc41bb8",
+    "verified": true
+  },
+  "MEDCORE_PLATINUM_ARABIC_LOCALIZATION_COVERAGE.csv": {
+    "size_bytes": 4736,
+    "sha256": "44db24bfcc9adc2d0b40a580f39605f4c5c3353a8f7537c6781f49f69d023485",
+    "verified": true
+  },
+  "MEDCORE_PLATINUM_OFFLINE_ARCHITECTURE_VERIFICATION.md": {
+    "size_bytes": 1917,
+    "sha256": "e8d581f367c10dfb5e2f2b2bc28f5a70bb8879af0f797222e9914d8470020455",
+    "verified": true
+  },
+  "MEDCORE_PLATINUM_FULL_SYSTEM_RED_TEAM_REPORT.md": {
+    "size_bytes": 5113,
+    "sha256": "9b79e6a70b218bbda887403b1e46695003597cbd9993c69f35affc70b9e7ff1b",
+    "verified": true
+  },
+  "MEDCORE_PLATINUM_BLUE_TEAM_CERTIFICATION_REPORT.md": {
+    "size_bytes": 2090,
+    "sha256": "9ee2262606bc6c595555e8ec9fa24135fe28a7dfa80fcd9d93a0fb8d162174a9",
+    "verified": true
+  },
+  "MEDCORE_PLATINUM_FINAL_ACCEPTANCE_REPORT.md": {
+    "size_bytes": 2839,
+    "sha256": "fdfb334a4f737b72d1989d90a89123efb8d1b2b24ecb4f304928271c7eb0cc55",
+    "verified": true
+  },
+  "MEDCORE_PLATINUM_COMPLETE_SYSTEM_MASTER_DOSSIER.md": {
+    "size_bytes": 310570,
+    "sha256": "2b24b8240953476356733bfc486a6751cd3bea284b4df17e01717335adeff2fe",
+    "verified": true
+  }
+}

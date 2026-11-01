@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "results": {
+    "batch20_independent_certification_gates_08_to_13_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "0: INDEPENDENT CERTIFICATION: Gates 08 to 13 Acceptance Suite GATE-08: Monotonic clock guard strictly flags rollback and fails closed\n00:17 +1: INDEPENDENT CERTIFICATION: Gates 08 to 13 Acceptance Suite GATE-09: 14-day offline grace period status evaluates with exact millisecond precision\n00:17 +2: INDEPENDENT CERTIFICATION: Gates 08 to 13 Acceptance Suite GATE-10: Baseline system seeding initializes finite 30-day evaluation, never NULL\n00:17 +3: INDEPENDENT CERTIFICATION: Gates 08 to 13 Acceptance Suite GATE-11: Authenticated technician imports signed license via HTTP API\n00:18 +4: INDEPENDENT CERTIFICATION: Gates 08 to 13 Acceptance Suite GATE-12: Direct SQL tampering of license state fails closed to signed disk truth\n00:18 +5: INDEPENDENT CERTIFICATION: Gates 08 to 13 Acceptance Suite GATE-13: Maintenance expiration does NOT lock clinical mutations if subscription is valid\n00:18 +6: INDEPENDENT CERTIFICATION: Gates 08 to 13 Acceptance Suite (tearDownAll)\n00:23 +6: All tests passed!\n"
+    },
+    "batch21_commercial_bypass_redteam_35_vectors_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "oint Mutation Bypass & Clinical Safety (Vectors 29-35) Vector 32: POST mutation rejected with HTTP 403 under TAMPER_LOCKED\n00:18 +32: GATE-15 & GATE-16: Commercial Bypass Red Team (35 Attack Vectors) & Clinical Safety Category 4: Endpoint Mutation Bypass & Clinical Safety (Vectors 29-35) Vector 33: POST mutation rejected with HTTP 403 under UNLICENSED\n00:18 +33: GATE-15 & GATE-16: Commercial Bypass Red Team (35 Attack Vectors) & Clinical Safety Category 4: Endpoint Mutation Bypass & Clinical Safety (Vectors 29-35) Vector 34: Clinical Read permitted with HTTP 200 under EXPIRED_READ_ONLY (Patient Safety)\n00:18 +34: GATE-15 & GATE-16: Commercial Bypass Red Team (35 Attack Vectors) & Clinical Safety Category 4: Endpoint Mutation Bypass & Clinical Safety (Vectors 29-35) Vector 35: Clinical Read permitted with HTTP 200 under TAMPER_LOCKED (Patient Safety)\n00:18 +35: GATE-15 & GATE-16: Commercial Bypass Red Team (35 Attack Vectors) & Clinical Safety (tearDownAll)\n00:20 +35: All tests passed!\n"
+    }
+  }
+}

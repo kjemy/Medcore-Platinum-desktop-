@@ -1,0 +1,22 @@
+{
+  "gate": "GATE_05_MASTER_DEFINITIONS",
+  "status": "PASS",
+  "timestamp": "2026-11-01T22:57:00Z",
+  "domainsImplemented": 21,
+  "testSuite": "medcore_desktop/test/gate05_definitions_workspace_test.dart",
+  "testsPassed": 7,
+  "testsFailed": 0,
+  "regressionPassed": true,
+  "redTeamAttacks": [
+    {
+      "id": "RED-05-01",
+      "description": "Injection attempt in code field is safely handled without XSS/SQL corruption",
+      "result": "PASS"
+    },
+    {
+      "id": "RED-05-02",
+      "description": "Missing required code or Arabic name fails closed and does not call API",
+      "result": "PASS"
+    }
+  ]
+}

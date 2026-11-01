@@ -158,6 +158,51 @@ class MedCoreApiClient {
     }
   }
 
+  Future<Map<String, dynamic>> deleteJson(
+    String path, {
+    Map<String, dynamic>? body,
+    bool useTechnicianAuth = false,
+  }) async {
+    try {
+      final resp = await _http.delete(
+        _buildUri(path),
+        headers: _buildHeaders(useTechnicianAuth: useTechnicianAuth, includeAuth: true),
+        body: body != null ? jsonEncode(body) : null,
+      );
+      return _decodeEnvelope(resp);
+    } on MedCoreApiException {
+      rethrow;
+    } catch (e) {
+      throw MedCoreApiException(
+        statusCode: 0,
+        code: 'SERVICE_UNREACHABLE',
+        message: 'Cannot reach Local MedCore Service at $baseUrl: $e',
+      );
+    }
+  }
+
+  // --- Master Definitions API ---
+  Future<List<Map<String, dynamic>>> getDefinitions(String type) async {
+    final res = await getJson('/api/v1/definitions/$type');
+    final items = res['items'];
+    if (items is List) {
+      return items.map((e) => e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map)).toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> createDefinition(String type, Map<String, dynamic> body) async {
+    return await postJson('/api/v1/definitions/$type', body);
+  }
+
+  Future<Map<String, dynamic>> updateDefinition(String publicId, Map<String, dynamic> body) async {
+    return await putJson('/api/v1/definitions/item/$publicId', body);
+  }
+
+  Future<Map<String, dynamic>> deleteDefinition(String publicId) async {
+    return await deleteJson('/api/v1/definitions/item/$publicId');
+  }
+
   Map<String, dynamic> _decodeEnvelope(http.Response resp) {
     Map<String, dynamic> decoded;
     try {
@@ -192,5 +237,41 @@ class MedCoreApiClient {
       code: 'HTTP_${resp.statusCode}',
       message: 'Local MedCore Service returned HTTP ${resp.statusCode}.',
     );
+  }
+
+  // --- Internal Notes API (Gate 15) ---
+  Future<List<Map<String, dynamic>>> getInternalNotes() async {
+    final res = await getJson('/api/v1/internal-notes');
+    final items = res['items'];
+    if (items is List) {
+      return items.map((e) => e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map)).toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> createInternalNote(String content, {String priority = 'NORMAL', bool isPinned = false}) async {
+    return await postJson('/api/v1/internal-notes', {
+      'content': content,
+      'priority': priority,
+      'isPinned': isPinned ? 1 : 0,
+    });
+  }
+
+  Future<Map<String, dynamic>> togglePinInternalNote(String publicId) async {
+    return await postJson('/api/v1/internal-notes/$publicId/pin', {});
+  }
+
+  // --- Doctor Commissions API (Gate 14) ---
+  Future<List<Map<String, dynamic>>> getDoctorCommissions() async {
+    final res = await getJson('/api/v1/finance/commissions');
+    final items = res['items'];
+    if (items is List) {
+      return items.map((e) => e is Map<String, dynamic> ? e : Map<String, dynamic>.from(e as Map)).toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> createDoctorCommissionProfile(Map<String, dynamic> payload) async {
+    return await postJson('/api/v1/finance/commissions', payload);
   }
 }

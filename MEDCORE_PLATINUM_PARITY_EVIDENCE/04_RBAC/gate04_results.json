@@ -1,0 +1,24 @@
+{
+  "gate": "GATE_04_RBAC",
+  "status": "PASS",
+  "timestamp": "2026-11-01T22:42:00Z",
+  "catalogSize": 261,
+  "domains": 8,
+  "testSuite": "medcore_desktop/test/gate04_rbac_administration_test.dart",
+  "regressionSuite": "medcore_desktop/test/admin_employee_management_test.dart",
+  "testsPassed": 5,
+  "testsFailed": 0,
+  "regressionPassed": true,
+  "redTeamAttacks": [
+    {
+      "id": "RED-04-01",
+      "description": "Escalation attempt to SuperAdmin permissions is blocked server-side",
+      "result": "PASS"
+    },
+    {
+      "id": "RED-04-02",
+      "description": "Custom mode with 0 permissions fails closed",
+      "result": "PASS"
+    }
+  ]
+}

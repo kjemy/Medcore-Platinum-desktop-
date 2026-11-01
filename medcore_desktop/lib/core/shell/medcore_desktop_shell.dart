@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/medcore_api_client.dart';
+import '../localization/medcore_localizations.dart';
+import '../localization/medcore_strings_ar.dart';
 import '../navigation/desktop_navigation_catalog.dart';
 import '../state/medcore_app_controller.dart';
 import '../../features/dashboard/executive_dashboard_screen.dart';
@@ -12,6 +14,9 @@ import '../../features/maintenance/maintenance_center_screen.dart';
 import '../../features/staff/admin_employee_management_screen.dart';
 import '../../features/templates/clinical_template_editor_screen.dart';
 import '../../features/scheduling/resource_scheduling_management_screen.dart';
+import '../../features/definitions/definitions_workspace_screen.dart';
+import '../../features/finance/doctor_commissions_screen.dart';
+import '../../features/notes/draggable_notes_overlay.dart';
 
 /// Consistent Desktop Layout Shell (`Sidebar + Top Header Bar + Route/Entitlement Guard + Content Pane`).
 class MedCoreDesktopShell extends StatelessWidget {
@@ -31,7 +36,9 @@ class MedCoreDesktopShell extends StatelessWidget {
     final routes = controller.visibleNavigationRoutes;
 
     return Scaffold(
-      body: Column(
+      body: Stack(
+        children: [
+          Column(
         children: [
           // Top Desktop Application Status Bar
           Container(
@@ -70,56 +77,69 @@ class MedCoreDesktopShell extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Chip(
-                  label: Text(
-                    branding.editionLabel,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-                  ),
-                  backgroundColor: cs.primaryContainer,
-                  side: BorderSide.none,
-                  visualDensity: VisualDensity.compact,
-                ),
-                const SizedBox(width: 12),
-                _StatusBadge(
-                  icon: Icons.dns_outlined,
-                  label: controller.api.baseUrl,
-                  color: cs.primary,
-                ),
                 const SizedBox(width: 8),
-                _StatusBadge(
-                  icon: Icons.important_devices_outlined,
-                  label: controller.api.deviceId,
-                  color: cs.secondary,
-                ),
-                const SizedBox(width: 12),
                 Flexible(
                   fit: FlexFit.loose,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        user.fullName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        '${user.role} (${user.staffCode})',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelSmall?.copyWith(color: cs.primary),
-                      ),
-                    ],
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Chip(
+                          label: Text(
+                            branding.editionLabel,
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                          ),
+                          backgroundColor: cs.primaryContainer,
+                          side: BorderSide.none,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        const SizedBox(width: 8),
+                        _StatusBadge(
+                          icon: Icons.dns_outlined,
+                          label: controller.api.baseUrl,
+                          color: cs.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        _StatusBadge(
+                          icon: Icons.important_devices_outlined,
+                          label: controller.api.deviceId,
+                          color: cs.secondary,
+                        ),
+                        const SizedBox(width: 8),
+                        LanguageSelectorWidget(
+                          currentLocale: controller.locale,
+                          onLocaleChanged: (newLoc) => controller.setLocale(newLoc),
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              user.fullName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              '${user.role} (${user.staffCode})',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(color: cs.primary),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          key: const Key('btn_staff_logout'),
+                          onPressed: controller.logoutStaff,
+                          icon: const Icon(Icons.logout, size: 16),
+                          label: Text(controller.isRtl ? 'تسجيل الخروج' : 'Sign Out'),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton.icon(
-                  key: const Key('btn_staff_logout'),
-                  onPressed: controller.logoutStaff,
-                  icon: const Icon(Icons.logout, size: 16),
-                  label: const Text('Sign Out'),
                 ),
               ],
             ),
@@ -227,7 +247,7 @@ class MedCoreDesktopShell extends StatelessWidget {
                             selectedTileColor: cs.primaryContainer.withOpacity(0.55),
                             leading: Icon(route.icon, size: 20),
                             title: Text(
-                              route.label,
+                              route.getDisplayLabel(controller.isRtl),
                               style: const TextStyle(fontWeight: FontWeight.w600),
                             ),
                             onTap: user.forcePasswordChange ? null : () => controller.selectRoute(route.routeId),
@@ -242,6 +262,9 @@ class MedCoreDesktopShell extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+          DraggableNotesOverlay(controller: controller),
         ],
       ),
     );
@@ -329,6 +352,10 @@ class MedCoreDesktopShell extends StatelessWidget {
         return ResourceSchedulingManagementScreen(controller: controller);
       case 'staff_admin':
         return AdminEmployeeManagementScreen(controller: controller);
+      case 'definitions_workspace':
+        return DefinitionsWorkspaceScreen(controller: controller);
+      case 'commissions':
+        return DoctorCommissionsScreen(controller: controller);
       default:
         return ExecutiveDashboardScreen(controller: controller);
     }
@@ -359,7 +386,7 @@ class _StatusBadge extends StatelessWidget {
         children: [
           Icon(icon, size: 15, color: color),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+          TechnicalLtrField(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
         ],
       ),
     );

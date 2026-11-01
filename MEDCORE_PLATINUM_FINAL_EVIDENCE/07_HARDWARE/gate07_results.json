@@ -1,0 +1,9 @@
+{
+  "suite": "batch18 & batch19 hardware binding tests",
+  "results": {
+    "exit_code": 0,
+    "pass": true,
+    "stdout": "19_independent_certification_gates_03_to_07_test.dart\n00:00 +0: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite (setUpAll)\n00:18 +0: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite GATE-03: Entitlement state transitions fail-closed against unauthorized reactivation\n00:20 +1: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite GATE-04: Adversarial License Mutation Matrix rejects all 10 tampering vectors\n00:20 +2: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite GATE-05: Hardware binding derivation enforces physical workstation identity\n00:20 +3: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite GATE-06: Copying database to another physical machine results in HARDWARE_BINDING_VIOLATION\n00:20 +4: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite GATE-07: Expired state permits clinical reading but rejects mutations with 403\n00:21 +5: INDEPENDENT CERTIFICATION: Gates 03 to 07 Acceptance Suite (tearDownAll)\n00:30 +5: All tests passed!\n"
+  },
+  "status": "PASS"
+}

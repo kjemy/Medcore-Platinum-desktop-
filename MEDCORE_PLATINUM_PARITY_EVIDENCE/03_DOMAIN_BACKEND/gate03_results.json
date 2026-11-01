@@ -1,0 +1,40 @@
+{
+  "gate": "03_DOMAIN_BACKEND",
+  "status": "PASS",
+  "timestamp_utc": "2026-11-01T22:35:00Z",
+  "migration_applied": "V019__master_definitions_and_clinic_extensions.sql",
+  "total_migrations_active": 19,
+  "domains_supported": 21,
+  "database_engine": "MariaDB 11.4.4",
+  "port": 3307,
+  "total_tests": 12,
+  "passed_tests": 12,
+  "failed_tests": 0,
+  "red_team_pass": true,
+  "red_team_vectors": [
+    {
+      "id": "RED-03-01",
+      "name": "Cross-tenant definition modification rejection",
+      "result": "PASS",
+      "detail": "Modifications across hospital tenant boundaries strictly fail-closed."
+    },
+    {
+      "id": "RED-03-02",
+      "name": "Duplicate definition code collision rejection",
+      "result": "PASS",
+      "detail": "Enforces uniqueness constraint per tenant and domain type."
+    },
+    {
+      "id": "RED-03-03",
+      "name": "Empty code or name validation",
+      "result": "PASS",
+      "detail": "Fails validation with ArgumentError before database mutation."
+    },
+    {
+      "id": "RED-03-04",
+      "name": "SQL injection in domain type parameter",
+      "result": "PASS",
+      "detail": "Parameterized SQL execution completely neutralizes SQL injection."
+    }
+  ]
+}

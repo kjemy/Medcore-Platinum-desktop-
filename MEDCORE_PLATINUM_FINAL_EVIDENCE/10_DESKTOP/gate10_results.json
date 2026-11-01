@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "data": {
+    "exit_code": 0,
+    "pass": true,
+    "stdout": "cian Mode Isolation, Live Configuration Save & Clean Exit\n00:19 +7: C:/Users/hp/Desktop/project 4/medcore_desktop/test/product_layer_desktop_test.dart: MedCore Platinum Desktop \u2014 Product Layer Foundation & Governance Gates 4. Facility-Specific Dynamic Patient Fields: HIDDEN Omitted & REQUIRED Enforced\n00:21 +8: C:/Users/hp/Desktop/project 4/medcore_desktop/test/product_layer_desktop_test.dart: MedCore Platinum Desktop \u2014 Product Layer Foundation & Governance Gates 5. Patient Financial Ledger Renders Authoritative MariaDB Balances & BACKEND_GAP Disclosures\n00:22 +9: C:/Users/hp/Desktop/project 4/medcore_desktop/test/product_layer_desktop_test.dart: MedCore Platinum Desktop \u2014 Product Layer Foundation & Governance Gates 6. Network Device Pairing Approval + Maintenance Center Report & Verified Backup Execution\n00:24 +10: loading C:/Users/hp/Desktop/project 4/medcore_desktop/test/technician_initial_admin_handover_test.dart\n00:25 +10: C:/Users/hp/Desktop/project 4/medcore_desktop/test/technician_initial_admin_handover_test.dart: MedCore Platinum Desktop \u2014 Initial Administrator Provisioning & Handover Tests 1. TechnicianConsoleScreen renders Tab 8 and provisions initial Hospital Administrator\n00:29 +11: C:/Users/hp/Desktop/project 4/medcore_desktop/test/technician_initial_admin_handover_test.dart: MedCore Platinum Desktop \u2014 Initial Administrator Provisioning & Handover Tests 2. MedCoreDesktopShell blocks user with forcePasswordChange and updates password\n00:30 +12: All tests passed!\n"
+  }
+}

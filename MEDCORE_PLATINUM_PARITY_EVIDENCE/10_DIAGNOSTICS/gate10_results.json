@@ -1,0 +1,8 @@
+{
+  "gate": "GATE_10_DIAGNOSTICS",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:22:00Z",
+  "lisSupported": true,
+  "risSupported": true,
+  "endpoints": ["/api/v1/orders?orderType=LAB", "/api/v1/orders?orderType=RAD"]
+}

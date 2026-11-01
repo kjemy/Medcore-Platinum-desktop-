@@ -1,0 +1,48 @@
+{
+  "suites": {
+    "batch10_initial_admin_and_activation_truth_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "visioning & Handover Truth 5. Duplicate staffCode or email is rejected with 409 Conflict\n00:28 +5: BATCH 9 \u2014 Initial Administrator Provisioning & Handover Truth 6. Initial Administrator logs in with temporary password; forcePasswordChange is signaled\n00:29 +6: BATCH 9 \u2014 Initial Administrator Provisioning & Handover Truth 7. Password change enforcement: wrong old password (401) and weak new password (400) rejected\n00:30 +7: BATCH 9 \u2014 Initial Administrator Provisioning & Handover Truth 8. Administrator completes forced password change: old password cleared, forcePasswordChange = false\n00:31 +8: BATCH 9 \u2014 Initial Administrator Provisioning & Handover Truth 9. Activation & Subscription Truth: Past expiration blocks operational access (403 SUBSCRIPTION_EXPIRED)\n00:33 +9: BATCH 9 \u2014 Initial Administrator Provisioning & Handover Truth 10. Baseline Seeding Truth: Factory baseline contains zero hardcoded staff accounts or universal passwords\n00:33 +10: (tearDownAll)\n00:33 +10: All tests passed!\n"
+    },
+    "batch11_final_commissioning_gate_simulation_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "n GATE 2: Facility Configuration, Edition, Subscription & Patient Fields MariaDB Reification\n00:19 +2: FINAL COMMISSIONING ACCEPTANCE GATE \u2014 Clean Install Simulation GATE 3: Module Entitlement & Fail-Closed Subscription Enforcement\n00:19 +3: FINAL COMMISSIONING ACCEPTANCE GATE \u2014 Clean Install Simulation GATE 4: Initial Hospital Administrator Provisioning, PBKDF2 Hashing & Audit\n00:20 +4: FINAL COMMISSIONING ACCEPTANCE GATE \u2014 Clean Install Simulation GATE 5: First Login, Mandatory Password Change & Session Rehydration\n00:23 +5: FINAL COMMISSIONING ACCEPTANCE GATE \u2014 Clean Install Simulation GATE 6: Hospital Administrator Creates 4 Operational Staff Roles\n00:27 +6: FINAL COMMISSIONING ACCEPTANCE GATE \u2014 Clean Install Simulation GATE 7: RBAC Runtime Proof \u2014 Permitted Operations vs Forbidden Operations\n00:28 +7: FINAL COMMISSIONING ACCEPTANCE GATE \u2014 Clean Install Simulation GATE 8: Appointment CRUD Execution & Template Boundary Reification\n00:28 +8: (tearDownAll)\n00:28 +8: All tests passed!\n"
+    },
+    "batch14_technician_bootstrap_and_first_admin_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "API with expired/closed token returns 403\n00:20 +15: SECURITY RED TEAM: Technician Authentication & Commissioning Attack Vectors RT-3: Technician API with malformed token returns 403\n00:20 +16: SECURITY RED TEAM: Technician Authentication & Commissioning Attack Vectors RT-4: Technician API from wrong/untrusted device binding returns 403\n00:21 +17: SECURITY RED TEAM: Technician Authentication & Commissioning Attack Vectors RT-5: Initial Admin creation without technician authorization returns 403\n00:21 +18: SECURITY RED TEAM: Technician Authentication & Commissioning Attack Vectors RT-6: Guessing / wrong technician credentials returns 403\n00:21 +19: SECURITY RED TEAM: Technician Authentication & Commissioning Attack Vectors RT-7: Provisioning administrator with duplicate staffCode returns 409\n00:22 +20: SECURITY RED TEAM: Technician Authentication & Commissioning Attack Vectors RT-8: Cross-tenant technician session access returns 403\n00:22 +21: (tearDownAll)\n00:22 +21: All tests passed!\n"
+    },
+    "batch16_technician_credential_lifecycle_and_recovery_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "ed\n00:33 +32: SECURITY RED TEAM: Comprehensive Vectors RT-TECH-01 to RT-TECH-24 RT-TECH-14 & RT-TECH-15: Tampered or missing security root on established system fails closed\n00:33 +33: SECURITY RED TEAM: Comprehensive Vectors RT-TECH-01 to RT-TECH-24 RT-TECH-16: Clock rollback detected and blocks normal technician session\n00:33 +34: SECURITY RED TEAM: Comprehensive Vectors RT-TECH-01 to RT-TECH-24 RT-TECH-21: Zero hardcoded technician passwords (dictionary attack blocked)\n00:37 +35: SECURITY RED TEAM: Comprehensive Vectors RT-TECH-01 to RT-TECH-24 RT-TECH-22: Zero universal recovery passwords (backdoors blocked)\n00:37 +36: SECURITY RED TEAM: Comprehensive Vectors RT-TECH-01 to RT-TECH-24 RT-TECH-23: Unauthenticated / direct API calls cannot bypass service authorization\n00:37 +37: SECURITY RED TEAM: Comprehensive Vectors RT-TECH-01 to RT-TECH-24 RT-TECH-24: Direct MariaDB modification cannot forge valid HMAC technician session token\n00:38 +38: (tearDownAll)\n00:38 +38: All tests passed!\n"
+    }
+  },
+  "red_team": [
+    {
+      "attack_id": "RT-COMM-01",
+      "name": "Direct Commissioning Endpoint Access without Token",
+      "tested_in": "batch11_final_commissioning_gate_simulation_test.dart",
+      "verified_behavior": "HTTP 401 Unauthorized (Fail closed)",
+      "result": "PASS"
+    },
+    {
+      "attack_id": "RT-COMM-02",
+      "name": "Replay Commissioning on Active Facility",
+      "tested_in": "batch14_technician_bootstrap_and_first_admin_test.dart",
+      "verified_behavior": "HTTP 409 Conflict / 403 Forbidden",
+      "result": "PASS"
+    },
+    {
+      "attack_id": "RT-COMM-03",
+      "name": "Brute-force / Invalid Technician Secret",
+      "tested_in": "batch16_technician_credential_lifecycle_and_recovery_test.dart",
+      "verified_behavior": "HTTP 401 & Rate Limit / Account Lock",
+      "result": "PASS"
+    }
+  ],
+  "gate_status": "PASS"
+}

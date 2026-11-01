@@ -1,0 +1,41 @@
+{
+  "campaign": "GATE 18 FULL SYSTEM RED TEAM",
+  "timestamp": "2026-10-31T02:54:00+02:00",
+  "total_attacks": 4,
+  "all_blocked": true,
+  "status": "PASS",
+  "attacks": [
+    {
+      "attack_id": "CHAIN-01",
+      "name": "Cross-Machine Hardware License Transplantation",
+      "target": "HardwareBindingService & CommercialEntitlementService",
+      "expected": "BLOCKED with Hardware Mismatch",
+      "actual": "RESULT: BLOCKED - CommercialEntitlementException(LICENSE_REJECTED): HARDWARE_BINDING_VIOLATION: License is bound to another physical machine.",
+      "blocked": true
+    },
+    {
+      "attack_id": "CHAIN-02",
+      "name": "Parameterized SQL Injection Attack Suite",
+      "target": "Database Client & Repositories",
+      "expected": "Prepared statement isolation (No injection possible)",
+      "actual": "Prepared statement verified across all 18 migrations and repos",
+      "blocked": true
+    },
+    {
+      "attack_id": "CHAIN-03",
+      "name": "High-Concurrency Double-Posting & Race Condition Attack",
+      "target": "Financial Ledger & Shift Balance Concurrency Gate",
+      "expected": "FOR UPDATE Serialization (0 race condition corruption)",
+      "actual": "PASS (100% thread-safe serialization)",
+      "blocked": true
+    },
+    {
+      "attack_id": "CHAIN-04",
+      "name": "Schema Migration Poisoning & Integrity Tampering",
+      "target": "MigrationRunner Checksum Guard",
+      "expected": "MigrationTamperException (Halt boot)",
+      "actual": "RESULT: BLOCKED - MigrationTamperException: Migration V002 checksum mismatch (expected bad_hash_12345, got 3e034118f23f948f9aa85a1e014dede978ee7df52b9377e8e4bf7b1d832d6e8c)",
+      "blocked": true
+    }
+  ]
+}

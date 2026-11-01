@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/api/medcore_api_client.dart';
 import '../../core/state/medcore_app_controller.dart';
+import 'doctor_consultation_workspace.dart';
 
 /// Real API-Backed Clinical & Operational Modules Hub
 /// (`Appointments`, `Doctor Queue`, `Laboratory`, `Radiology`, `Pharmacy`, `Inpatient`, `Specialty Units`).
@@ -94,6 +95,13 @@ class _ClinicalModulesHubScreenState extends State<ClinicalModulesHubScreen> {
           break;
         case 'radiology':
           final res = await api.getJson('/api/v1/orders', query: const {'orderType': 'RAD'});
+          _items = ((res['items'] as List?) ?? const [])
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+          break;
+        case 'doctors':
+          final res = await api.getJson('/api/v1/doctor/queue');
+          _dataScope = (res['dataScopeApplied'] ?? '').toString();
           _items = ((res['items'] as List?) ?? const [])
               .map((e) => Map<String, dynamic>.from(e as Map))
               .toList();
@@ -231,6 +239,8 @@ class _ClinicalModulesHubScreenState extends State<ClinicalModulesHubScreen> {
         return 'Laboratory Orders & Results (LIS / CLN-003)';
       case 'radiology':
         return 'Radiology & Imaging Orders (RIS / CLN-003)';
+      case 'doctors':
+        return 'Doctor Queue & Encounters (CLN-001)';
       case 'pharmacy':
         return 'Pharmacy & FIFO Inventory Batches (CLN-004)';
       case 'inpatient':
@@ -309,6 +319,13 @@ class _ClinicalModulesHubScreenState extends State<ClinicalModulesHubScreen> {
               rows: _items,
             ),
           ],
+        );
+
+      case 'doctors':
+        return DoctorConsultationWorkspace(
+          controller: widget.controller,
+          queueItems: _items,
+          onRefreshQueue: _loadSectionData,
         );
 
       case 'pharmacy':

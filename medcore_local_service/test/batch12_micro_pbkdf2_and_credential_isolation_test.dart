@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import 'support/test_db_config.dart';
 
 void main() {
-  const dbName = 'medcore_commissioning_gate_test';
+  const dbName = 'medcore_micro_credential_test';
   late DbClient db;
   LocalMedCoreServer? server;
   late String baseUrl;
@@ -20,6 +20,17 @@ void main() {
     securityRoot = Directory.systemTemp.createTempSync('medcore-micro-gate-');
     final config = testDbConfig(databaseName: dbName, maxConnections: 5);
     db = DbClient(config);
+
+    // Clean Database Initialization: Drop & Recreate isolated test database
+    final adminConn = await db.openDedicatedConnection(useDatabase: false);
+    try {
+      await adminConn.execute('DROP DATABASE IF EXISTS `$dbName`');
+      await adminConn.execute(
+        'CREATE DATABASE `$dbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci',
+      );
+    } finally {
+      await adminConn.close();
+    }
 
     // Apply migrations if needed
     final serviceRoot = Directory.current.path;
@@ -38,6 +49,14 @@ void main() {
 
   tearDownAll(() async {
     await server?.stop();
+    try {
+      final adminConn = await db.openDedicatedConnection(useDatabase: false);
+      try {
+        await adminConn.execute('DROP DATABASE IF EXISTS `$dbName`');
+      } finally {
+        await adminConn.close();
+      }
+    } catch (_) {}
     await db.close();
     try {
       if (securityRoot.existsSync()) {

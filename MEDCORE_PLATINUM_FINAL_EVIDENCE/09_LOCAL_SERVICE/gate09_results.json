@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "results": {
+    "batch1_gate1_and_gate2_acceptance_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "es SEC-FLAW-03 & SEC-FLAW-05 (Blocks Unenrolled Device, Cross-Tenant & Cross-Device Replay)\n00:23 +5: GATE 2 \u2014 Local Service, Authentication, Employee Identity, 10-Role RBAC & Permission Enforcement TASK 2.4 & 2.5: Closes SEC-FLAW-01 (Default mode enforces strict role permissions, never wildcard *)\n00:24 +6: GATE 2 \u2014 Local Service, Authentication, Employee Identity, 10-Role RBAC & Permission Enforcement TASK 2.5: Enforces Dimension 2 (_all Tenant-Wide vs Own-Only Scope) at SQL Repository Layer\n00:25 +7: GATE 2 \u2014 Local Service, Authentication, Employee Identity, 10-Role RBAC & Permission Enforcement TASK 2.5: Enforces Dimension 3 (_secure Device Lock) & Operational Flags (canDelete, canCollectMoney, refundPolicy)\n00:27 +8: GATE 2 \u2014 Local Service, Authentication, Employee Identity, 10-Role RBAC & Permission Enforcement TASK 2.6: Verifies Truth & Data Explorer (Schema Introspection, Privacy PII Masking, Relational Truth Trace & Exports)\n00:28 +9: (tearDownAll)\n00:28 +9: All tests passed!\n"
+    },
+    "batch2_feature_completion_acceptance_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": " Admissions (CLN-005) 7.2 Adversarial Test CLN-005: Attempting to admit another patient to OCCUPIED bed fails closed\n00:28 +16: BATCH 2 \u2014 WORKSTREAM 7: Inpatient Bed Map & Admissions (CLN-005) 7.3 Discharges patient and releases bed back to AVAILABLE\n00:29 +17: BATCH 2 \u2014 WORKSTREAM 7: Inpatient Bed Map & Admissions (CLN-005) (tearDownAll)\n00:29 +17: BATCH 2 \u2014 WORKSTREAM 8: Financial Commission Settlement & Dual Control (FIN-007 & SEC-005) (setUpAll)\n00:29 +17: BATCH 2 \u2014 WORKSTREAM 8: Financial Commission Settlement & Dual Control (FIN-007 & SEC-005) 8.1 Settles accrued doctor commission with corrected double-entry & SEC-005 Two-Person Integrity\n00:31 +18: BATCH 2 \u2014 WORKSTREAM 8: Financial Commission Settlement & Dual Control (FIN-007 & SEC-005) 8.2 Dual Control Approval Workflow & SEC-005 Two-Person Integrity Enforced\n00:34 +19: BATCH 2 \u2014 WORKSTREAM 8: Financial Commission Settlement & Dual Control (FIN-007 & SEC-005) (tearDownAll)\n00:34 +19: (tearDownAll)\n00:34 +19: All tests passed!\n"
+    },
+    "batch3_concurrency_and_integration_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "Race (SEC-005 Two-Person Rule) 4.1 Concurrent Decision Race: Exactly 1 supervisor decision commits, competing decision rejected\n00:38 +6: CONCURRENCY SUITE 4: Concurrent Dual-Control Approval Race (SEC-005 Two-Person Rule) 4.2 Self-Approval Prevention (SEC-005 Two-Person Integrity): Staff cannot approve own request\n00:39 +7: CONCURRENCY SUITE 4: Concurrent Dual-Control Approval Race (SEC-005 Two-Person Rule) (tearDownAll)\n00:39 +7: CONCURRENCY SUITE 5: Cross-Tenant Isolation Integrity under Parallel Workload (setUpAll)\n00:39 +7: CONCURRENCY SUITE 5: Cross-Tenant Isolation Integrity under Parallel Workload 5.1 Tenant A Doctor cannot view or mutate Tenant B Beds or Patients\n00:40 +8: CONCURRENCY SUITE 5: Cross-Tenant Isolation Integrity under Parallel Workload 5.2 High-Throughput Concurrent Multi-Tenant Appointments: Zero Cross-Leakage\n00:41 +9: CONCURRENCY SUITE 5: Cross-Tenant Isolation Integrity under Parallel Workload (tearDownAll)\n00:41 +9: (tearDownAll)\n00:41 +9: All tests passed!\n"
+    },
+    "batch4_full_system_integration_and_redteam_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "(FIN-006 Reconciliation Formula)\n00:21 +12: ADVERSARIAL RED TEAM SECURITY SUITE: Multi-Vector Penetration & Negative Boundary Tests Attack 1: Unauthorized Role Action \u2014 Receptionist attempts to prescribe medication (Fails closed 403)\n00:21 +13: ADVERSARIAL RED TEAM SECURITY SUITE: Multi-Vector Penetration & Negative Boundary Tests Attack 2: Unauthorized Cash Payout \u2014 Receptionist attempts to settle doctor commissions (Fails closed 403)\n00:21 +14: ADVERSARIAL RED TEAM SECURITY SUITE: Multi-Vector Penetration & Negative Boundary Tests Attack 3: Double-Close Attack on Closed Shift (Fails with 409 Conflict)\n00:21 +15: ADVERSARIAL RED TEAM SECURITY SUITE: Multi-Vector Penetration & Negative Boundary Tests Attack 4: Double-Bed Occupancy Overbooking (CLN-005 Isolation)\n00:22 +16: ADVERSARIAL RED TEAM SECURITY SUITE: Multi-Vector Penetration & Negative Boundary Tests Attack 5: Tampered Bearer Token Injection (Fails closed 401 Unauthorized)\n00:22 +17: (tearDownAll)\n00:22 +17: All tests passed!\n"
+    }
+  }
+}

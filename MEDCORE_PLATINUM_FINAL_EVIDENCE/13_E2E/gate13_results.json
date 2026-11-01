@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "data": {
+    "batch5_product_layer_foundation_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "00:00 +0: loading test/batch5_product_layer_foundation_test.dart\n00:00 +0: (setUpAll)\n00:16 +0: 1. Protected Technician Mode Isolation: Rejects HospitalAdmin Bearer token and enforces Technician Session\n00:18 +1: 2. Module Entitlement Enforcement & Centralized Branding Read-Back\n00:18 +2: 3. Facility-Specific Patient Fields: Enforces REQUIRED fields and strips HIDDEN inpatient/ICU/nursing fields\n00:18 +3: 4. Network / Device Foundation: Discovery != Authorization, Pairing Code Approval & Session Revocation\n00:20 +4: 5. Patient Financial Ledger & Financial Documents / Reports Authoritative Read-Back\n00:22 +5: 6. Maintenance Center & Vendor-Neutral Backup Engine Foundation\n00:23 +6: (tearDownAll)\n00:23 +6: All tests passed!\n"
+    },
+    "batch6_master_product_completion_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "00:00 +0: loading test/batch6_master_product_completion_test.dart\n00:00 +0: (setUpAll)\n00:18 +0: Batch 1: Financial Refund Reversal symmetrically reverses ledger legs and maintains trial balance\n00:18 +1: Batch 2: Standalone PATIENT_AR Collection posts balanced double entries and prevents over-collection\n00:19 +2: Batch 6: RAD/LAB Permission Split enforces granular access on /api/v1/orders\n00:20 +3: Batch 5: Specialty Clinical Endpoints operate on MariaDB schema and enforce module entitlement\n00:22 +4: Batch 17: Restore Hardening verifies backup archive integrity before restore\n00:22 +5: Batch 6/18: Native Printing formats ESC/POS and ZPL jobs with HARDWARE_VERIFICATION_PENDING marker\n00:23 +6: Batch 19: Technician Diagnostic Bundle redacts PII and includes authoritative system telemetry\n00:24 +7: (tearDownAll)\n00:24 +7: All tests passed!\n"
+    },
+    "batch7_employee_management_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "t.dart\n00:00 +0: (setUpAll)\n00:15 +0: 1. Non-admin user cannot access admin employee management (403 Forbidden)\n00:17 +1: 2. Admin creates employee with secure PBKDF2 hash (Zero plaintext password in DB)\n00:18 +2: 3. Duplicate staffCode or duplicate email rejects fail-closed (409 Conflict)\n00:19 +3: 4. Weak password (< 8 characters) rejected with 400 WEAK_PASSWORD\n00:19 +4: 5. Employee logs in and changes own password (voluntary/forced)\n00:21 +5: 6. Admin resets password, forces password change, and revokes active sessions\n00:23 +6: 7. Admin deactivates employee -> login denied and existing sessions revoked\n00:24 +7: 8. Admin account edit does NOT reset password\n00:25 +8: 9. Security Audit Trail records employee mutations without plaintext passwords\n00:25 +9: 10. Cross-Tenant Isolation: Admin from Hospital A cannot manage Hospital B staff\n00:26 +10: 11. HR Staff Evaluations: Create, List, and Physical Database Persistence (GAP-015)\n00:27 +11: (tearDownAll)\n00:27 +11: All tests passed!\n"
+    },
+    "batch8_external_payables_and_lan_pki_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "All tests passed!\n"
+    },
+    "batch13_dynamic_template_and_resource_engine_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": " Multi-Resource Slot Allocation Engine 7.2: Atomic Multi-Resource Appointment Booking allocates all resources with buffer\n00:25 +13: STAGE 7 & 8: Conflict Detection & Atomic Multi-Resource Slot Allocation Engine 7.3: Overlapping booking request must trigger RESOURCE_CONFLICT (409 Conflict)\n00:25 +14: STAGE 7 & 8: Conflict Detection & Atomic Multi-Resource Slot Allocation Engine 7.4: Booking during post-appointment buffer (e.g. 10:50) must also trigger 409 Conflict\n00:25 +15: STAGE 7 & 8: Conflict Detection & Atomic Multi-Resource Slot Allocation Engine 7.5: Adjacent non-overlapping slot (11:05) succeeds without conflict\n00:26 +16: STAGE 7 & 8: Conflict Detection & Atomic Multi-Resource Slot Allocation Engine 7.6: Release allocations for cancelled appointment frees up resources immediately\n00:26 +17: RED TEAM GATE: Scheduling Multi-Tenant Boundary Isolation RT-2: Cross-tenant resource booking and conflict leakage is strictly blocked\n00:26 +18: (tearDownAll)\n00:26 +18: All tests passed!\n"
+    },
+    "settlement_domain_redteam_test.dart": {
+      "exit_code": 0,
+      "pass": true,
+      "stdout": "EAM ADVERSARIAL SUITE (30 ATTACK VECTORS) Vector 16 & 17: Duplicate Approval and Duplicate Delivery Rejections\n00:23 +9: DEDICATED SETTLEMENT RED TEAM ADVERSARIAL SUITE (30 ATTACK VECTORS) Vector 28 & 30: Accrual Replay Prevention: Consumed Accruals Cannot Be Resettled\n00:24 +10: DEDICATED SETTLEMENT RED TEAM ADVERSARIAL SUITE (30 ATTACK VECTORS) Vector 21 & 22: Stale or Tampered Bearer Tokens Rejected with 401\n00:24 +11: DEDICATED SETTLEMENT RED TEAM ADVERSARIAL SUITE (30 ATTACK VECTORS) Vector 4, 5, 7, 8: Concurrent Duplicate Settlement Delivery Serialization Proof\n00:25 +12: DEDICATED SETTLEMENT RED TEAM ADVERSARIAL SUITE (30 ATTACK VECTORS) F-FIN-01 Focused Invariant: Partial Accrual Consumption Preserves Remainder in MariaDB and Enables Subsequent Settlement\n00:30 +13: DEDICATED SETTLEMENT RED TEAM ADVERSARIAL SUITE (30 ATTACK VECTORS) Vector 31: Dynamic Currency Resolution Reified in MariaDB mc_financial_settlements (GAP-017)\n00:31 +14: (tearDownAll)\n00:31 +14: All tests passed!\n"
+    }
+  }
+}

@@ -20,6 +20,7 @@ class MedCoreAppController extends ChangeNotifier {
   int? _focusedPatientIdForLedger;
   bool _isBusy = false;
   String? _globalErrorBanner;
+  Locale _locale = const Locale('ar', 'EG');
 
   MedCoreAppController({MedCoreApiClient? apiClient})
       : api = apiClient ?? MedCoreApiClient();
@@ -38,6 +39,14 @@ class MedCoreAppController extends ChangeNotifier {
   int? get focusedPatientIdForLedger => _focusedPatientIdForLedger;
   bool get isBusy => _isBusy;
   String? get globalErrorBanner => _globalErrorBanner;
+  Locale get locale => _locale;
+  bool get isRtl => _locale.languageCode == 'ar';
+
+  void setLocale(Locale newLocale) {
+    if (_locale == newLocale) return;
+    _locale = newLocale;
+    notifyListeners();
+  }
 
   /// Centralized ThemeData generator (Light & Dark) driven 100% by `BrandingConfig`.
   ThemeData buildTheme(Brightness brightness) {

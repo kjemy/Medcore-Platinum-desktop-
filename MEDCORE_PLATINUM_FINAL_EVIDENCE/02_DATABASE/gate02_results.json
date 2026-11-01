@@ -1,0 +1,39 @@
+{
+  "batch12": {
+    "exit_code": 0,
+    "pass": true,
+    "stdout": "00:00 +0: loading test/batch12_micro_pbkdf2_and_credential_isolation_test.dart\n00:00 +0: (setUpAll)\n00:11 +0: MICRO VERIFICATION A \u2014 PBKDF2 Implementation Truth A.1: Algorithm parameters, default iteration count and salt length\n00:12 +1: MICRO VERIFICATION A \u2014 PBKDF2 Implementation Truth A.2: Constant-time verification, negative passwords, and iteration count agility\n00:15 +2: MICRO VERIFICATION B \u2014 Test Credential Isolation & Universal Backdoor Absence B.1: Baseline seeding produces zero staff rows in MariaDB\n00:15 +3: MICRO VERIFICATION B \u2014 Test Credential Isolation & Universal Backdoor Absence B.2: Test credentials do not act as universal fallback passwords\n00:21 +4: (tearDownAll)\n00:22 +4: All tests passed!\n"
+  },
+  "batch9": {
+    "exit_code": 0,
+    "pass": true,
+    "stdout": "00:00 +0: loading test/batch9_database_lifecycle_and_recovery_test.dart\n00:00 +0: (setUpAll)\n00:15 +0: BATCH 9 \u2014 GATE 11 & GATE 12: Database Lifecycle, Backup, Export, Restore & Reset 9.1 Database Status & Diagnostics discloses engine version, 96 tables & schema version\n00:15 +1: BATCH 9 \u2014 GATE 11 & GATE 12: Database Lifecycle, Backup, Export, Restore & Reset 9.2 Database Physical Location discloses runtime, data, backup, and export paths\n00:15 +2: BATCH 9 \u2014 GATE 11 & GATE 12: Database Lifecycle, Backup, Export, Restore & Reset 9.3 Database Table Statistics returns metrics for all 96+ tables\n00:15 +3: BATCH 9 \u2014 GATE 11 & GATE 12: Database Lifecycle, Backup, Export, Restore & Reset 9.4 Full Backup Package produces SQL, JSON, XLSX, CSV, Manifest, Checksums, MCBAK & ZIP\n00:19 +4: BATCH 9 \u2014 GATE 11 & GATE 12: Database Lifecycle, Backup, Export, Restore & Reset 9.5 Backup Package Verification: valid package passes; tampered package fails\n00:24 +5: BATCH 9 \u2014 GATE 11 & GATE 12: Database Lifecycle, Backup, Export, Restore & Reset 9.6 Multi-Format Standalone Export generates SQL, CSV, JSON, XLSX & ZIP packages\n00:27 +6: BATCH 9 \u2014 GATE 11 & GATE 12: Database Lifecycle, Backup, Export, Restore & Reset 9.7 Factory Reset: Enforces strict safety, requires RESET MEDCORE, re-migrates & seeds baseline\n00:43 +7: BATCH 9 \u2014 GATE 11 & GATE 12: Database Lifecycle, Backup, Export, Restore & Reset 9.8 End-to-End Round-Trip: Insert Data -> Full Backup -> Factory Reset -> Restore -> Read-Back Parity\n01:04 +8: BATCH 9 \u2014 GATE 11 & GATE 12: Database Lifecycle, Backup, Export, Restore & Reset 9.9 REST API Endpoints: All Database Lifecycle routes respond correctly and enforce security\n01:14 +9: (tearDownAll)\n01:14 +9: All tests passed!\n"
+  },
+  "red_team": [
+    {
+      "attack_id": "DB-RT-01",
+      "name": "Passwordless Root Connection Attempt",
+      "expected": "ACCESS_DENIED (Fail closed)",
+      "actual_exit_code": 1,
+      "blocked": true,
+      "output": "WARNING: option --ssl-verify-server-cert is disabled, because of an insecure passwordless login.\nERROR 1045 (28000): Access denied for user 'root'@'localhost' (using password: NO)"
+    },
+    {
+      "attack_id": "DB-RT-02",
+      "name": "Default Weak Password Attack",
+      "expected": "ACCESS_DENIED (Fail closed)",
+      "actual_exit_code": 1,
+      "blocked": true,
+      "output": "ERROR 1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)"
+    },
+    {
+      "attack_id": "DB-RT-03",
+      "name": "External Network Interface Exposure Probe",
+      "expected": "127.0.0.1 (Strict Loopback Only)",
+      "actual": "127.0.0.1",
+      "blocked": true,
+      "output": "127.0.0.1"
+    }
+  ],
+  "gate_status": "PASS"
+}

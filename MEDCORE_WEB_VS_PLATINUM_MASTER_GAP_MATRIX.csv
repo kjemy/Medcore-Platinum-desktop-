@@ -1,0 +1,91 @@
+ID,Domain,Feature/Capability,Web Status,Platinum Status,Parity Status,Severity Gap,Reason / Evidence
+GAP-001,Master Data,Clinics Master Definition CRUD,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P0,Web has ClinicsForm.tsx in DefinitionsModule; Platinum has no clinic entity table or UI
+GAP-002,Reception,Dynamic Clinic Cards & Queue Grid,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P0,Web has ClinicCard.tsx with countdown timers and queues; Platinum reception is a single visit checkout form
+GAP-003,Reception,Temporary Clinic Creation on the Fly,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has CreateTemporaryClinicModal.tsx for emergency doctor shifts; Platinum has no temporary clinic concept
+GAP-004,Master Data,Service Catalog & Base Pricing,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P0,Web has ServicesForm.tsx in definitions; Platinum bills raw serviceCode strings without a master service registry
+GAP-005,Master Data,Consumables & Supplies Definition CRUD,IMPLEMENTED,SCHEMA_ONLY,SCHEMA_ONLY,P1,Web has inventory/main and QuickConsumableModal; Platinum has mc_inventory_items table but no create/edit UI
+GAP-006,Master Data,Doctor Clinic Consultation Pricing,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P0,Web has DoctorClinicPricing (examPrice consultPrice commissions); Platinum has no doctor tariff structure
+GAP-007,Master Data,Doctor Service Commission Exceptions,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has serviceExceptions and flatServiceCommPercent; Platinum has single commissionPct on visit checkout
+GAP-008,Master Data,Nurse Clinic Allocation & Shift Rates,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has NursesForm.tsx (linkedClinics hourlyRate shiftHours); Platinum staff admin only sets basic credentials
+GAP-009,Master Data,Employee HR Contracts & Base Salary,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has EmployeesForm.tsx with salary amounts and cycles; Platinum handles payables via external payables ledger
+GAP-010,Master Data,Inpatient Rooms & Physical Bed Management,IMPLEMENTED,SCHEMA_ONLY,SCHEMA_ONLY,P1,Web has RoomsForm.tsx with room daily rates deposits and bed statuses; Platinum has mc_beds but no room setup UI
+GAP-011,Master Data,Operating Rooms Definition & Hourly Rates,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has OperatingRoomsForm.tsx in definitions; Platinum surgeries hub does not define physical theater suites
+GAP-012,Master Data,ICU Units & Assigned Ventilators/Devices,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has IcuForm.tsx and IcuDevicesForm.tsx; Platinum ICU is summary card and backend flowsheet endpoints
+GAP-013,Master Data,NICU Rooms & Incubator Stations,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has NicuRoomsForm.tsx and IncubatorsForm.tsx; Platinum has no incubator unit definition UI
+GAP-014,Master Data,Laboratory Test Catalog & Normal Ranges,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has LabForm.tsx with test panels reference ranges and prices; Platinum orders lab tests by free text/code
+GAP-015,Master Data,External Out-sourced Laboratories,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has ExternalLabForm.tsx; Platinum settles external fees via external payables without lab catalog
+GAP-016,Master Data,Radiology Modality Procedures Catalog,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has RadiologyForm.tsx with modality pricing and contrast flags; Platinum orders radiology by code
+GAP-017,Master Data,Insurance Companies & Copay Policies,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P0,Web has InsuranceForm.tsx (coverage% copay% excluded conditions); Platinum visit has insurance discount decimal
+GAP-018,Master Data,Accepted Payment Methods Registry,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has PaymentMethodsForm.tsx (cash card wallet insurance voucher); Platinum transactions use paymentMethod string
+GAP-019,Master Data,Multi-Currency Exchange Rates,IMPLEMENTED,PARTIAL,PARTIAL,P3,Web has CurrencyForm.tsx in definitions; Platinum facility config holds default currency string without exchange table
+GAP-020,Master Data,General Clinical Conditions & Clauses,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P3,Web has ConditionsForm.tsx for legal consent notes; Platinum consent events exist in schema only
+GAP-021,RBAC,Interactive Visual Permission Matrix Editor,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has /dashboard/settings/roles with PermissionTree.tsx; Platinum Flutter app has no permission matrix UI
+GAP-022,RBAC,Custom Permissions Assignment to Staff,IMPLEMENTED,BACKEND_ONLY,BACKEND_ONLY,P0,Web has CustomPermissionsBuilder.tsx; Platinum backend supports PUT /api/v1/staff/<id>/permissions but UI lacks fields
+GAP-023,RBAC,Staff Operational Flags Configuration UI,IMPLEMENTED,BACKEND_ONLY,BACKEND_ONLY,P1,Web configures canEdit canDelete canCollectMoney canMakeRefunds in UI; Platinum staff dialog only selects coarse role
+GAP-024,RBAC,Refund Policy & Named Approvers Setup,IMPLEMENTED,BACKEND_ONLY,BACKEND_ONLY,P1,Web assigns refundPolicy and approver IDs per user; Platinum backend enforces policy but UI dialog does not expose it
+GAP-025,RBAC,Staff Clinic & Department Assignment UI,IMPLEMENTED,BACKEND_ONLY,BACKEND_ONLY,P1,Web assigns staff to clinics in definitions; Platinum backend holds clinic_id and dept_id but UI form omits them
+GAP-026,Reception,Quick Medical Service Modal,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has QuickServiceModal.tsx on clinic cards; Platinum receptionist must type service details into visit checkout
+GAP-027,Reception,Quick Medical Consumable Modal,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has QuickConsumableModal.tsx on clinic cards; Platinum receptionist must manually input consumable figures
+GAP-028,Reception,Live Waiting Room & Patient Calling Console,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has /dashboard/reception/waiting with queue status; Platinum has no live waiting room display screen
+GAP-029,Reception,Clinic-Specific Console Route,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/reception/clinic/[id] for room tablets; Platinum has no per-clinic console route
+GAP-030,Pharmacy,Outpatient Pharmacy Point of Sale (POS),IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has /dashboard/pharmacy/pos with cart barcode scan; Platinum pharmacy screen lists items and batches only
+GAP-031,Pharmacy,Drug-Drug Interaction Checker,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/pharmacy/interactions for polypharmacy safety; Platinum has no interaction checker engine
+GAP-032,Inventory,Consumable Custody Requisition & Dispense,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has /dashboard/inventory/dispense for ward/clinic requests; Platinum inventory is read-only list
+GAP-033,Inventory,Item Pricing & Markup Sheet Management,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/inventory/prices for selling/cost prices; Platinum has no price sheet update screen
+GAP-034,Inventory,Purchase Orders & Receiving Invoices,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/purchasing for supplier shipments; Platinum handles inventory batches via migrations/backend
+GAP-035,Clinical,ICU Interactive Flowsheet & Vitals Monitor,IMPLEMENTED,BACKEND_ONLY,BACKEND_ONLY,P1,Web has interactive flowsheet in /dashboard/clinical/icu; Platinum UI shows descriptor summary card
+GAP-036,Clinical,Operating Theater Booking & Surgeon Roster,IMPLEMENTED,BACKEND_ONLY,BACKEND_ONLY,P1,Web has /dashboard/clinical/surgery-booking and surgeries; Platinum UI shows summary card
+GAP-037,Clinical,Hemodialysis Interactive Flowsheet,IMPLEMENTED,BACKEND_ONLY,BACKEND_ONLY,P1,Web has /dashboard/clinical/dialysis/sessions; Platinum UI shows descriptor summary card
+GAP-038,Clinical,Endoscopy Unit Clinical Records,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/clinical/endoscopy; Platinum has no dedicated endoscopy route or widget
+GAP-039,Clinical,Oncology Unit Chemotherapy Records,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/clinical/oncology; Platinum has no oncology module
+GAP-040,Clinical,Physiotherapy & Rehabilitation Sessions,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/clinical/physiotherapy; Platinum has no rehab documentation route
+GAP-041,Nursing,Nurse Shift Task Checklist,IMPLEMENTED,BACKEND_ONLY,BACKEND_ONLY,P1,Web has /dashboard/my-nursing-tasks; Platinum backend has /api/v1/clinical/nursing/tasks but UI lacks interactive checklist
+GAP-042,HR,Employee Self-Service Portal,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P3,Web has /dashboard/my-portal for staff attendance and payslips; Platinum staff view own name in top header only
+GAP-043,HR,Staff Recruitment & Applicant Tracking,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P3,Web has /dashboard/hr/recruitment; Platinum has no recruitment tracking
+GAP-044,HR,Work Schedules & Shift Rotation Builder,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/hr/schedules for roster management; Platinum has ResourceScheduling for slots only
+GAP-045,HR,Kiosk Mode PIN-Based Staff Attendance,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/hr/attendance-kiosk; Platinum staff authenticate only via full login screen
+GAP-046,HR,Staff Disciplinary & HR Investigations,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P3,Web has /dashboard/hr/investigations; Platinum has employee security audit trail but no HR case manager
+GAP-047,Finance,Physician Commission & Profit Audit,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has /dashboard/finance/doctor-profits calculating split fees; Platinum ledger tracks raw payments and visit commission%
+GAP-048,Finance,Staff Profit Withdrawal Request Workflow,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P1,Web has /dashboard/withdrawals for doctors/nurses/staff payouts; Platinum settles payouts via external payables
+GAP-049,Quality,Clinical Quality Control Auditing,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/quality/control for clinical indicators; Platinum has no quality management suite
+GAP-050,Quality,Hospital Infection Control Surveillance,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/quality/infection for HAI monitoring; Platinum has no infection control module
+GAP-051,Quality,Patient Complaints & Feedback Tracking,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P3,Web has /dashboard/complaints; Platinum has no patient feedback intake screen
+GAP-052,AI,AI Clinical Copilot / Assistant,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P3,Web has /dashboard/ai-doctor and floating widget; Platinum AI is explicitly deferred in architecture
+GAP-053,AI,AI Executive Board Analytics,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P3,Web has /dashboard/admin-ai; Platinum has executive dashboard metrics without AI narrative synthesis
+GAP-054,Settings,System Quotas & Module Entitlements UI,IMPLEMENTED,PARTIAL,PARTIAL,P2,Web has /dashboard/settings/quotas; Platinum manages module flags via Technician Console
+GAP-055,Settings,Financial Policies & Accounting Rules UI,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/settings/financial-rules; Platinum rules are enforced at database and service layer
+GAP-056,Settings,System Security & Lock Configuration UI,IMPLEMENTED,NOT_IMPLEMENTED,WEB_ONLY,P2,Web has /dashboard/settings/security for PIN locks; Platinum enforces hardware device binding natively
+GAP-057,Settings,Comprehensive Audit Trail UI Browser,IMPLEMENTED,PARTIAL,PARTIAL,P2,Web has /dashboard/settings/audit-log; Platinum audit logs viewable per employee or via database explorer API
+GAP-058,Core Platform,Offline-First Operation & Bundled DB,NOT_IMPLEMENTED,IMPLEMENTED,PLATINUM_ONLY,NONE,Platinum runs self-contained on Windows with embedded MariaDB 11.4.4; Web requires cloud server
+GAP-059,Core Platform,Hardware Workstation Binding (Ed25519),NOT_IMPLEMENTED,IMPLEMENTED,PLATINUM_ONLY,NONE,Platinum binds sessions to machine CPU/Disk/BIOS fingerprints; Web uses standard browser sessions
+GAP-060,Core Platform,Clock Rollback & Anti-Tampering Engine,NOT_IMPLEMENTED,IMPLEMENTED,PLATINUM_ONLY,NONE,Platinum uses mc_clock_guard with HMAC signatures to prevent license bypass; Web has no clock guard
+GAP-061,Core Platform,LAN Peer Discovery & Local PKI,NOT_IMPLEMENTED,IMPLEMENTED,PLATINUM_ONLY,NONE,Platinum discovers terminals via mDNS and issues X.509 certs offline; Web relies on public HTTPS
+GAP-062,Core Platform,Technician Mode & Disaster Recovery Console,NOT_IMPLEMENTED,IMPLEMENTED,PLATINUM_ONLY,NONE,Platinum has isolated technician console with HMAC time challenge; Web uses WordPress admin
+GAP-063,Core Platform,Database Snapshotting & Live Restore Verification,NOT_IMPLEMENTED,IMPLEMENTED,PLATINUM_ONLY,NONE,Platinum has automated backup snapshot runner with SHA-256 verification; Web uses mysqldump
+GAP-064,Finance,FIN-004 Triple-Split Cost Separation,NOT_IMPLEMENTED,IMPLEMENTED,PLATINUM_ONLY,NONE,Platinum separates service labor consumable materials and equipment fees; Web combines visit total
+GAP-065,Finance,Dual-Control Two-Man Rule Engine,NOT_IMPLEMENTED,IMPLEMENTED,PLATINUM_ONLY,NONE,Platinum implements formal mc_dual_control_request workflow; Web uses custom permissions and approver IDs
+GAP-066,Scheduling,Dynamic Multi-Resource Conflict Rule Engine,NOT_IMPLEMENTED,IMPLEMENTED,PLATINUM_ONLY,NONE,Platinum checks simultaneous doctor room theater equipment conflicts; Web checks single doctor slot
+GAP-067,Finance,External Payables Settlement Ledger,NOT_IMPLEMENTED,IMPLEMENTED,PLATINUM_ONLY,NONE,Platinum tracks vendor bills utilities and external lab checks in dedicated ledger; Web uses contracts
+GAP-068,Printing,Hardware-Level Thermal ESC/POS Receipt Engine,NOT_IMPLEMENTED,IMPLEMENTED,PLATINUM_ONLY,NONE,Platinum generates ESC/POS binary format for thermal receipt printers; Web uses window.print() CSS
+GAP-069,Patients,Master Patient Index CRUD & Search,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems support patient registration name nationalId phone DOB gender and search
+GAP-070,Patients,Patient Deletion with Audit Trail,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems soft-delete patient records with administrative privilege check
+GAP-071,Shifts,Cashier Shift Box Opening & Closing,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems require open shift with opening balance and reconcile closed cash totals
+GAP-072,Visits,Atomic Outpatient Visit Checkout,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems record visit patient doctor financial posting and update shift box
+GAP-073,Visits,Visit Payment Refund Request & Execution,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems enforce refund policies and update financial ledger
+GAP-074,Appointments,Outpatient Appointment Scheduling,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems allow scheduling appointments with patient doctor date and time
+GAP-075,Clinical,Physician Outpatient Encounter Queue,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems list waiting patients for the doctor and initiate encounter
+GAP-076,Clinical,Electronic Prescription (e-Rx) Issuance,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems record drug dosage route frequency and notes
+GAP-077,Clinical,Diagnostic Order Placement (Lab/Rad),IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems record diagnostic orders associated with the encounter
+GAP-078,Clinical,Physician Clinical Documentation Templates,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems support reusable clinical exam templates by specialty
+GAP-079,Laboratory,Lab Order Reception & Specimen Tracking,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems list pending lab orders with specimen tracking
+GAP-080,Laboratory,Laboratory Test Results Entry,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems allow entering quantitative test values and panic alert flags
+GAP-081,Radiology,Radiology Worklist & Exam Tracking,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems list pending radiology exams with modality filtering
+GAP-082,Pharmacy,Medication Inventory Batch Tracking (FIFO),IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems track drug batches expiry dates and quantity on hand
+GAP-083,Pharmacy,Prescription Dispensing from Inventory,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems deduct stock batches upon prescription dispense
+GAP-084,Inpatient,Hospital Bed Status Map & Availability,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems track available occupied and maintenance bed status
+GAP-085,Inpatient,Inpatient Admission & Bed Allocation,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems admit patient and assign specific bed number
+GAP-086,Inpatient,Inpatient Discharge & Bed Release,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems record discharge timestamp and release bed to available status
+GAP-087,Staff,Hospital Staff Accounts & PBKDF2 Passwords,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems manage employee login credentials and enforce password security
+GAP-088,Staff,Staff Account Suspension & Session Revocation,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems allow suspending accounts and revoking active sessions
+GAP-089,Finance,Patient Outstanding Balance Tracking (AR),IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems calculate unpaid visit balances and process AR collections
+GAP-090,Finance,Patient Financial Statement & Invoice Document,IMPLEMENTED,IMPLEMENTED,FULL_PARITY,NONE,Both systems generate printable invoice and statement documents

@@ -1,0 +1,23 @@
+{
+  "gate": "GATE_18_RELEASE_CANDIDATE_BUILD_AND_VERIFICATION",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:28:55Z",
+  "build_metadata": {
+    "release_name": "medcore-platinum-windows-v1.0.0-parity-rc5",
+    "target_os": "Windows 10 / 11 / Server 2019+ (x64)",
+    "flutter_version": "3.24.5 (channel stable)",
+    "dart_version": "3.5.4",
+    "mariadb_version": "11.4.4-MariaDB",
+    "migration_head": "V019__master_definitions_and_clinic_extensions.sql",
+    "packaging_script": "packaging/package_closure.ps1",
+    "launcher_script": "packaging/start_medcore_system.bat"
+  },
+  "runtime_invariants": {
+    "bundled_mariadb_verified": true,
+    "mariadb_loopback_only": true,
+    "port_3307_isolated": true,
+    "local_service_port_8443_isolated": true,
+    "dynamic_db_password_resolution": true,
+    "zero_external_network_dependencies": true
+  }
+}

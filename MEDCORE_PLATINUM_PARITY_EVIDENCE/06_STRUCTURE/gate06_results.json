@@ -1,0 +1,16 @@
+{
+  "gate": "GATE_06_STRUCTURE",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:05:00Z",
+  "temporaryClinicsSupported": true,
+  "testSuite": "medcore_desktop/test/gate06_07_clinics_reception_cards_test.dart",
+  "testsPassed": 3,
+  "testsFailed": 0,
+  "redTeamAttacks": [
+    {
+      "id": "RED-06-01",
+      "description": "Negative fee or invalid decimal in checkout fails closed",
+      "result": "PASS"
+    }
+  ]
+}

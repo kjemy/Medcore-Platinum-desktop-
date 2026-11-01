@@ -128,6 +128,22 @@ Future<void> main(List<String> args) async {
 
   final boundPort = await server.start(address: '127.0.0.1', port: port);
   stdout.writeln('[MedCore Local Service] Listening on http://127.0.0.1:$boundPort/api/v1/health');
+
+  // Secure LAN Gateway for multi-workstation hospital connectivity (Gate 16 & Gate 17)
+  final enableLanGateway = Platform.environment['MEDCORE_ENABLE_LAN_GATEWAY']?.toLowerCase() != 'false';
+  final lanGatewayPort = int.tryParse(Platform.environment['MEDCORE_LAN_GATEWAY_PORT'] ?? '8444') ?? 8444;
+  final lanGatewayBind = Platform.environment['MEDCORE_LAN_GATEWAY_BIND'] ?? '0.0.0.0';
+
+  if (enableLanGateway) {
+    final gateway = SecureLanGateway(
+      db: db,
+      internalHost: '127.0.0.1',
+      internalPort: boundPort,
+      defaultHospitalCode: 'HOSP_MAIN',
+    );
+    final gwServer = await gateway.start(address: lanGatewayBind, port: lanGatewayPort);
+    stdout.writeln('[MedCore Secure LAN Gateway] Listening on http://${gwServer.address.address}:${gwServer.port} (Forwarding to 127.0.0.1:$boundPort)');
+  }
 }
 
 

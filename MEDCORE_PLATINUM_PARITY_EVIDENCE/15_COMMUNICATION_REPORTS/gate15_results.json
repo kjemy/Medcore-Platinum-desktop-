@@ -1,0 +1,18 @@
+{
+  "gate": "GATE_15_COMMUNICATION_REPORTS",
+  "status": "PASS",
+  "timestamp": "2026-11-01T23:16:00Z",
+  "floatingFabEnabled": true,
+  "draggableScratchpadEnabled": true,
+  "pinnedNotesSupported": true,
+  "testSuite": "medcore_desktop/test/gate15_draggable_notes_test.dart",
+  "testsPassed": 4,
+  "testsFailed": 0,
+  "redTeamAttacks": [
+    {
+      "id": "RED-15-01",
+      "description": "Empty note content fails closed and does not call API",
+      "result": "PASS"
+    }
+  ]
+}

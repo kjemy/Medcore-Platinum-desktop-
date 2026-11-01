@@ -1,0 +1,90 @@
+{
+  "gate": "MEDCORE_PLATINUM_RC5_FINAL_EVIDENCE_RECONCILIATION",
+  "mode": "READ_ONLY_RECONCILIATION",
+  "timestamp": "2026-11-01T23:50:00Z",
+  "project_path": "C:\\Users\\hp\\Desktop\\project 4",
+  "web_reference_path": "C:\\Users\\hp\\Desktop\\project2",
+  "final_decision": "RC5_NOT_BUILT",
+  "checks": {
+    "CHECK_1_FINAL_SOURCE_IDENTITY": {
+      "status": "PARTIALLY_VERIFIED",
+      "current_branch": "feature/platinum-functional-parity-arabic",
+      "head_sha": "093c07f861f2e69c86507e345c49f6e1d94a8680",
+      "baseline_sha": "093c07f861f2e69c86507e345c49f6e1d94a8680",
+      "working_tree_committed": false,
+      "pushed_to_remote": false,
+      "tracked_files_modified": 13,
+      "insertions": 1260,
+      "deletions": 93,
+      "untracked_files_present": true
+    },
+    "CHECK_2_RC5_ARTIFACT_PROOF": {
+      "status": "BLOCKED",
+      "rc5_zip_exists": false,
+      "absolute_file_path": null,
+      "exact_filename": null,
+      "file_size_bytes": null,
+      "sha256": null,
+      "gate18_status": "BLOCKED",
+      "latest_physical_artifact": "medcore-platinum-windows-v1.0.0-rc.4-self-contained-093c07f.zip"
+    },
+    "CHECK_3_WEB_DEFINITIONS_PARITY": {
+      "status": "PARTIALLY_VERIFIED",
+      "original_web_forms_count": 21,
+      "platinum_definitions_tabs_count": 21,
+      "architectural_difference_noted": "Operational entities (Clinics, Employees, Nurses) are promoted to dedicated screens in Platinum, while DefinitionsWorkspaceScreen provides 21 lookup and classification domains."
+    },
+    "CHECK_4_ALL_WEB_ROUTES_TRACEABILITY": {
+      "status": "PARTIALLY_VERIFIED",
+      "total_web_routes_found": 118,
+      "operational_hospital_routes": 82,
+      "cloud_ai_excluded_routes": 2,
+      "saas_public_excluded_routes": 12,
+      "sub_views_and_admin_routes": 22,
+      "parity_contracts_count": 31,
+      "high_level_matrix_count": 21,
+      "manifest_domains_count": 15
+    },
+    "CHECK_5_LAN_WIFI_ARCHITECTURE": {
+      "status": "NOT_VERIFIED",
+      "mariadb_host": "127.0.0.1",
+      "mariadb_port": 3307,
+      "local_service_host": "127.0.0.1",
+      "local_service_port": 8443,
+      "lan_listener_active": false,
+      "live_laptop_pairing_verified": false
+    },
+    "CHECK_6_ARABIC_LOCALIZATION_COVERAGE": {
+      "status": "VERIFIED",
+      "default_locale": "ar-EG",
+      "text_direction": "RTL",
+      "central_constants_count": 105,
+      "unique_arabic_literals_in_lib": 336,
+      "bidi_isolation_verified": true,
+      "english_french_disabled": true
+    },
+    "CHECK_7_RBAC_AND_DATABASE_CONSISTENCY": {
+      "status": "VERIFIED",
+      "authoritative_table": "mc_staff",
+      "permissions_mode_column": "permissions_mode",
+      "custom_permissions_column": "custom_permissions_json",
+      "roles_count": 10,
+      "total_ui_permissions_count": 261,
+      "server_side_enforcement": true
+    },
+    "CHECK_8_TEST_EVIDENCE_RECONCILIATION": {
+      "status": "VERIFIED",
+      "desktop_tests_unique": 54,
+      "backend_tests_unique": 12,
+      "total_unique_tests": 66,
+      "double_counting_eliminated": true,
+      "red_team_vectors_neutralized": 16,
+      "live_mariadb_tested": true
+    },
+    "CHECK_9_BLUE_TEAM_INDEPENDENCE": {
+      "status": "NOT_VERIFIED",
+      "evaluation_label": "INDEPENDENT REVIEW NOT PROVEN",
+      "reason": "Review conducted in same agent process without independent third-party auditor"
+    }
+  }
+}
