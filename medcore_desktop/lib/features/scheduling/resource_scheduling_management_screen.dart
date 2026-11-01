@@ -20,8 +20,46 @@ class _ResourceSchedulingManagementScreenState extends State<ResourceSchedulingM
   List<Map<String, dynamic>> _resources = [];
   List<Map<String, dynamic>> _rules = [];
 
-  // Active sub-tab: 'resources' | 'rules' | 'booking_console'
+  // Active sub-tab: 'resources' | 'rules' | 'booking_console' | 'weekly_shifts'
   String _activeTab = 'resources';
+
+  // Weekly Clinic Shift Schedules state (GAP-016)
+  String _selectedDayOfWeek = 'Saturday';
+  final List<String> _daysOfWeek = const [
+    'Saturday',
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+  ];
+  final List<Map<String, dynamic>> _weeklyShifts = [
+    {
+      'day': 'Saturday',
+      'clinic': 'General Outpatient Clinic',
+      'doctor': 'DOC-01 (Dr. Ahmed Khaled)',
+      'nurse': 'NUR-01 (Nurse Mona)',
+      'shift': 'Morning (08:00 - 14:00)',
+      'room': 'Room 101',
+    },
+    {
+      'day': 'Saturday',
+      'clinic': 'Cardiology Clinic',
+      'doctor': 'DOC-02 (Dr. Sara Hassan)',
+      'nurse': 'NUR-02 (Nurse Yasmine)',
+      'shift': 'Evening (14:00 - 20:00)',
+      'room': 'Room 102',
+    },
+    {
+      'day': 'Sunday',
+      'clinic': 'Pediatrics Clinic',
+      'doctor': 'DOC-03 (Dr. Omar Tarek)',
+      'nurse': 'NUR-03 (Nurse Salma)',
+      'shift': 'Morning (08:00 - 14:00)',
+      'room': 'Room 103',
+    },
+  ];
 
   // Conflict Testing / Booking form state
   final _aptNoCtrl = TextEditingController(text: 'APT-LIVE-001');
@@ -449,6 +487,11 @@ class _ResourceSchedulingManagementScreenState extends State<ResourceSchedulingM
                             icon: Icon(Icons.event_available),
                             label: Text('Live Conflict Verification Console'),
                           ),
+                          const ButtonSegment(
+                            value: 'weekly_shifts',
+                            icon: Icon(Icons.calendar_view_week_outlined),
+                            label: Text('Weekly Clinic Shifts (GAP-016)'),
+                          ),
                         ],
                         selected: {_activeTab},
                         onSelectionChanged: (val) {
@@ -466,7 +509,9 @@ class _ResourceSchedulingManagementScreenState extends State<ResourceSchedulingM
                           ? _buildResourcesTab(theme)
                           : _activeTab == 'rules'
                               ? _buildRulesTab(theme)
-                              : _buildBookingConsole(theme),
+                              : _activeTab == 'weekly_shifts'
+                                  ? _buildWeeklyShiftsTab(theme)
+                                  : _buildBookingConsole(theme),
                     ),
                   ],
                 ),
@@ -731,6 +776,190 @@ class _ResourceSchedulingManagementScreenState extends State<ResourceSchedulingM
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // GAP-016: Weekly Clinic Shift Schedules Tab
+  // =========================================================================
+  Widget _buildWeeklyShiftsTab(ThemeData theme) {
+    final activeDayShifts = _weeklyShifts.where((s) => s['day'] == _selectedDayOfWeek).toList();
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Weekly Clinic Shift Schedules (GAP-016)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  Text(
+                    'Visual calendar mapping clinics, doctors, and nurses across weekly shifts.',
+                    style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+              FilledButton.icon(
+                onPressed: _showAddShiftDialog,
+                icon: const Icon(Icons.add_alarm),
+                label: const Text('Add Shift'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Day of week selector
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _daysOfWeek.map((day) {
+                final isSelected = day == _selectedDayOfWeek;
+                final count = _weeklyShifts.where((s) => s['day'] == day).length;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text('$day ($count)'),
+                    selected: isSelected,
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedDayOfWeek = day);
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Shift Cards for active day
+          Expanded(
+            child: activeDayShifts.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.event_busy, size: 48, color: theme.colorScheme.outline),
+                        const SizedBox(height: 8),
+                        Text('No clinic shifts scheduled for $_selectedDayOfWeek.'),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: activeDayShifts.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (ctx, i) {
+                      final shift = activeDayShifts[i];
+                      return Card(
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            child: Icon(Icons.medical_services, color: theme.colorScheme.onPrimaryContainer),
+                          ),
+                          title: Text(shift['clinic'] ?? 'Clinic', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(
+                            'Doctor: ${shift['doctor']} • Nurse: ${shift['nurse']}\nTiming: ${shift['shift']} • Room: ${shift['room']}',
+                          ),
+                          isThreeLine: true,
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            onPressed: () {
+                              setState(() {
+                                _weeklyShifts.remove(shift);
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Shift removed from weekly schedule.')),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddShiftDialog() {
+    final clinicCtrl = TextEditingController(text: 'General Outpatient Clinic');
+    final docCtrl = TextEditingController(text: 'DOC-01');
+    final nurseCtrl = TextEditingController(text: 'NUR-01');
+    final roomCtrl = TextEditingController(text: 'Room 101');
+    String day = _selectedDayOfWeek;
+    String shiftSlot = 'Morning (08:00 - 14:00)';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          title: const Text('Schedule Weekly Clinic Shift'),
+          content: SizedBox(
+            width: 440,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: day,
+                    decoration: const InputDecoration(labelText: 'Day of Week', border: OutlineInputBorder()),
+                    items: _daysOfWeek.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                    onChanged: (v) => setDlgState(() => day = v!),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(controller: clinicCtrl, decoration: const InputDecoration(labelText: 'Clinic Name / Code', border: OutlineInputBorder())),
+                  const SizedBox(height: 10),
+                  TextField(controller: docCtrl, decoration: const InputDecoration(labelText: 'Doctor Staff ID', border: OutlineInputBorder())),
+                  const SizedBox(height: 10),
+                  TextField(controller: nurseCtrl, decoration: const InputDecoration(labelText: 'Nurse Staff ID', border: OutlineInputBorder())),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: shiftSlot,
+                    decoration: const InputDecoration(labelText: 'Shift Slot', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 'Morning (08:00 - 14:00)', child: Text('Morning (08:00 - 14:00)')),
+                      DropdownMenuItem(value: 'Evening (14:00 - 20:00)', child: Text('Evening (14:00 - 20:00)')),
+                      DropdownMenuItem(value: 'Night (20:00 - 08:00)', child: Text('Night (20:00 - 08:00)')),
+                    ],
+                    onChanged: (v) => setDlgState(() => shiftSlot = v!),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(controller: roomCtrl, decoration: const InputDecoration(labelText: 'Room / Resource', border: OutlineInputBorder())),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                setState(() {
+                  _weeklyShifts.add({
+                    'day': day,
+                    'clinic': clinicCtrl.text.trim(),
+                    'doctor': docCtrl.text.trim(),
+                    'nurse': nurseCtrl.text.trim(),
+                    'shift': shiftSlot,
+                    'room': roomCtrl.text.trim(),
+                  });
+                  _selectedDayOfWeek = day;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Shift scheduled successfully.')),
+                );
+              },
+              child: const Text('Save Shift'),
+            ),
+          ],
+        ),
       ),
     );
   }
