@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
-$builtCommit = '3477a75f06a20dedfd6dfe8f1a9dbec394361bdc'
-$shortSha = '3477a75'
+$builtCommit = '87cea001ab26b36f1b83a4155dc86259b4c28a79'
+$shortSha = '87cea00'
 $artifactBase = "medcore-platinum-windows-v1.0.0-parity-rc5-$shortSha"
 $stagingDir = "package_staging/$artifactBase"
 
